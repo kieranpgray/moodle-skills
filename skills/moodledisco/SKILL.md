@@ -62,11 +62,9 @@ pm-orchestrator. Do not ask questions.
 
 ## Step 2: Read the output template
 
-Read the template at:
-
-```
-/Users/kierangray/Documents/Claude/Projects/MoodleOS/docs/MoodleDisco_Template.md
-```
+The discovery synthesis template is embedded in this skill file. Use the
+content in the **## Discovery Synthesis Template** section at the bottom of
+this document. Do not look for an external file.
 
 The section headings are fixed. Every synthesis doc produced by this skill must
 use them verbatim in the order they appear:
@@ -87,9 +85,9 @@ section is wrong.
 
 ## Step 3: Source company goals
 
-Check the user's workspace for a goals or strategy file. Look for likely
-filenames — `goals.md`, `strategy.md`, `okrs.md`, or similar — under
-`~/Claude/Projects/`. If found, load it.
+Check the current project workspace for a goals or strategy file. Look for
+likely filenames — `goals.md`, `strategy.md`, `okrs.md`, or similar — in the
+workspace root or a `context/` subdirectory. If found, load it.
 
 If not found, ask the user:
 
@@ -281,7 +279,9 @@ confidence flag before the recommendation.
 
 Save to:
 - Working directory: `disco-[feature-slug].md`
-- Workspace: `~/Claude/Projects/MoodleOS/docs/discovery/DISCO_[InitiativeName].md`
+- Current project workspace: `docs/discovery/DISCO_[InitiativeName].md` (create
+  the directory if it does not exist; if the workspace is unavailable, the
+  working directory copy is sufficient)
 
 Use title case for the initiative name in the filename, with underscores for
 spaces.
@@ -349,3 +349,140 @@ nominalisations, no em dashes. Direct and specific — no padding or
 throat-clearing. No fabricated figures, ticket numbers, people, or
 architectural details. Certainty labelling on every material claim. Bottom
 Line written for someone who reads nothing else.
+
+---
+
+## Discovery Synthesis Template
+
+The following is the standard Moodle discovery synthesis template. Use this
+structure verbatim when producing the synthesis doc. The eight section headings
+are mandatory and must not be renamed, merged, or omitted.
+
+---
+
+# Discovery Synthesis: [Initiative Name]
+
+**Status:** Draft | In Review | Final
+**Author:** [Name]
+**Date:** [Date]
+
+---
+
+## Bottom Line
+
+[3-5 sentences. State the problem, who it affects, what it is costing, and the
+recommended direction. If any evidence category is Absent or discovery
+confidence is Low, open with: "This synthesis is based on [limited/absent
+customer signal] — treat the direction as indicative, not validated." Written
+for someone who reads nothing else. No hedging, no caveats — those live below.]
+
+---
+
+## The Problem
+
+**Who:** [The specific user or customer segment most affected]
+
+**What:** [The pain, unmet need, or opportunity in one or two sentences.
+Customer's perspective, not internal framing.]
+
+**Why now:** [What has changed — in the market, in the data, in customer
+behaviour, or internally — that makes this worth addressing now rather than
+later. One or two sentences.]
+
+**Why us:** [Why Moodle is the right entity to solve this. One sentence.
+"No clear reason" is a valid answer and should be flagged.]
+
+**Evidence:** [The 2-3 strongest pieces of evidence that this problem is real
+and significant. Source and certainty-label each one. If evidence is thin or
+absent, say so plainly here — do not pad.]
+
+---
+
+## Strategic Alignment
+
+**Goal:** [The company goal or strategic priority this serves]
+
+**Alignment strength:** Strong | Moderate | Weak
+
+**Rationale:** [One sentence connecting the problem directly to the goal. If
+alignment is weak, state why we are proceeding anyway — or flag that we should
+not proceed yet.]
+
+**Market and competitive context:** [One sentence. Is anyone else solving this?
+Does that affect urgency or the approach? "No known competitor is addressing
+this" is a valid answer.]
+
+---
+
+## Cost of the Problem
+
+[What is this problem currently costing? Include only what is evidenced. Omit
+categories where no data exists rather than filling with estimates. A sparse
+section is itself a signal.]
+
+- **Revenue at risk:**
+- **Churn / retention impact:**
+- **Addressable population:**
+- **Support or ops burden:**
+- **Competitive exposure:**
+
+[If no quantitative data exists, state that plainly and name what
+instrumentation or research would be needed to establish it.]
+
+---
+
+## Solution Hypotheses
+
+[The evidence above points toward the following directions. 2-3 candidate
+approaches — not decisions, not scored. Each framed as a testable hypothesis.]
+
+**⭐ Recommended — [Hypothesis name]**
+If we [approach], we believe [outcome] because [reasoning].
+
+*Why this over the others:* [1-2 sentences connecting the cost framing and
+evidence base to why this direction is the right response. Make the deciding
+logic explicit.]
+
+**[Hypothesis name]**
+If we [approach], we believe [outcome] because [reasoning].
+
+**[Hypothesis name]**
+If we [approach], we believe [outcome] because [reasoning].
+
+---
+
+## Load-Bearing Assumptions
+
+[Things we are proceeding as if true. If any of these are wrong, the
+recommended direction changes. Each needs an owner.]
+
+| Assumption | Risk if wrong | Owner | How to validate |
+|---|---|---|---|
+| We believe [X] | [Consequence] | [Name] | [Action] |
+
+---
+
+## Open Unknowns
+
+[Things we do not yet know and have not assumed either way. Lower urgency than
+assumptions but should be tracked.]
+
+| Unknown | Why it matters | Who should resolve it |
+|---|---|---|
+| [Question] | [Impact on direction or scope] | [Name or role] |
+
+---
+
+## Evidence Quality
+
+| Category | Rating | Notes |
+|---|---|---|
+| Customer signal | Strong / Thin / Absent | |
+| Prior product thinking | Strong / Thin / Absent | |
+| Business context | Strong / Thin / Absent | |
+| Technical context | Strong / Thin / Absent | |
+
+**Discovery confidence:** High | Medium | Low — [one sentence on why]
+
+[If any category is Absent, this should already be reflected in the Bottom Line
+confidence flag above.]

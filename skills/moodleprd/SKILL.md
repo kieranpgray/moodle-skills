@@ -17,9 +17,8 @@ A skill for drafting PRDs for Moodle initiatives. It harvests context from prima
 sources (Confluence, Google Drive, Granola), fills gaps through targeted questions,
 and renders output against the standard Moodle PRD template — with Moodle-specific
 patterns around source attribution, open decisions, and certainty labelling built
-in. Saves to the MoodleOS workspace and pushes to Confluence personal space on
-approval. Optionally produces a backlog ticket file that can be pushed to
-Confluence or Jira.
+in. Saves to the current project workspace and pushes to Confluence on approval.
+Optionally produces a backlog ticket file that can be pushed to Confluence or Jira.
 
 ---
 
@@ -65,11 +64,9 @@ problem statement provided in context.
 
 ## Step 2: Read the PRD template
 
-Read the template at:
-
-```
-~/Claude/Projects/MoodleOS/docs/prd/PRD_Template.md
-```
+The PRD template is embedded in this skill file. Use the content in the
+**## PRD Template** section at the bottom of this document. Do not look for
+an external file.
 
 The six main section headings are fixed and must appear verbatim in every PRD:
 
@@ -87,11 +84,12 @@ different headings, merges sections, or omits any of these six is wrong.
 
 ## Step 3: Read workspace context
 
-Before searching external sources, read these files to build initiative context:
+Before searching external sources, check the current project workspace for these
+files and read any that exist:
 
-- `~/Claude/Projects/MoodleOS/context/projects.md` — active initiative status
-- `~/Claude/Projects/MoodleOS/decision-log.md` — open and closed decisions
-- `~/Claude/Projects/MoodleOS/context/people.md` — team and stakeholder context
+- `context/projects.md` — active initiative status
+- `decision-log.md` — open and closed decisions
+- `context/people.md` — team and stakeholder context
 
 Note anything directly relevant to the initiative. Any open decisions in
 `decision-log.md` that relate to this initiative must be carried into the PRD's
@@ -305,18 +303,21 @@ Step 3 must appear in the blocking list with their decision-log reference.
 - Direct and specific. No padding or throat-clearing.
 - Do not invent ticket numbers, people, dates, or architectural details.
 - Keep each section within the word and length guidance in the template.
-- Metadata: Status as "Draft", Owner as "Kieran Gray", Target Increment/Date
-  as unknown unless the user provided it.
+- Metadata: Status as "Draft", Owner as [the user's name — ask if unknown],
+  Target Increment/Date as unknown unless the user provided it.
 
 ---
 
 ## Step 8: Save to workspace
 
-Save the completed draft to:
+Save the completed draft to the current project workspace under:
 
 ```
-~/Claude/Projects/MoodleOS/docs/prd/PRD_[InitiativeName].md
+docs/prd/PRD_[InitiativeName].md
 ```
+
+If that directory does not exist, save to the working directory as
+`PRD_[InitiativeName].md` and note where the file was saved.
 
 Use title case for the initiative name in the filename, with underscores for
 spaces.
@@ -387,11 +388,14 @@ the PRD is structured.
 
 ### Saving the backlog file
 
-Save the ticket breakdown to:
+Save the ticket breakdown to the current project workspace under:
 
 ```
-~/Claude/Projects/MoodleOS/docs/prd/BACKLOG_[InitiativeName].md
+docs/prd/BACKLOG_[InitiativeName].md
 ```
+
+If that directory does not exist, save to the working directory as
+`BACKLOG_[InitiativeName].md` and note where the file was saved.
 
 Present the file path to the user and ask them to review it.
 
@@ -399,9 +403,10 @@ Present the file path to the user and ask them to review it.
 
 After the user reviews, offer two publishing paths:
 
-**Option A — Confluence.** Create a new page in Kieran Gray's personal
-Confluence space, as a child of the PRD page if it exists there already.
-Title: "[Initiative Name] — Backlog". Do not push until the user approves.
+**Option A — Confluence.** Ask the user for the Confluence destination: which
+space to publish to, and optionally which parent page to nest under. Create the
+page there. Title: "[Initiative Name] — Backlog". Do not push until the user
+approves and has provided the destination.
 
 **Option B — Jira.** Use the Jira MCP to create each ticket in the relevant
 Jira project. Before doing this, confirm the target project key with the user.
@@ -419,12 +424,12 @@ explicit approval.
 
 When the user confirms the PRD is ready to publish:
 
-1. Use the Confluence MCP to create a new page in Kieran Gray's personal
-   Confluence space.
-2. Page title: the initiative name.
-3. Content: the full PRD converted to Confluence-compatible formatting.
-4. Confirm the page URL once created.
-5. Moving the page to a team or project space is the user's responsibility.
+1. Ask the user for the Confluence destination: which space to publish to, and
+   optionally which parent page to nest under.
+2. Use the Confluence MCP to create the page at the specified location.
+3. Page title: the initiative name.
+4. Content: the full PRD converted to Confluence-compatible formatting.
+5. Confirm the page URL once created.
 
 Do not push to Confluence until the user explicitly approves.
 
@@ -457,3 +462,117 @@ The source hierarchy for Moodle PRDs:
 
 If a source is not connected or returns an error, note it and proceed with
 gap questions for the affected sections.
+
+---
+
+## PRD Template
+
+The following is the standard Moodle PRD template. Use this structure verbatim
+when drafting. The six section headings are mandatory and must not be renamed,
+merged, or omitted.
+
+---
+
+# [Activity Name]
+
+**Status:** Draft ✍️ / Review 👀 / Approved 💪
+**Owner:** [Name]
+**Target Increment/Date:** [e.g., 2026-I1]
+
+---
+
+## 1. The Problem (The "Why")
+
+_In 150 words or less, tell us what will be different once you have implemented
+this piece of work._
+
+Clearly define the user pain point with a "killer" data point or customer quote
+to ensure 85%+ confidence in the problem.
+
+Don't forget to articulate the driver / motivator / source of the 'Why' as part
+of this section (e.g., Key priority for Moodle Services, Significant Volume of
+Tickets in Tracker, etc).
+
+---
+
+## 2. Strategy & Success Metrics (The "Goal")
+
+_Which of Moodle's business goals does this relate to?_
+
+_Which of your Increment goals does this relate to?_
+
+_How will you measure your progress?_
+
+**Primary Metric**
+The main needle you want to move (e.g., Increase conversion by X%).
+
+**Guardrail Metric**
+What you don't want to break (e.g., No increase in support tickets).
+
+**Current Baseline**
+Can we measure this today? (Yes/No). If no, how will we start?
+
+---
+
+## 3. The Hypothesis
+
+_Instead of stating requirements as facts, frame them as a testable idea._
+
+Use this syntax to document your hypothesis:
+
+> If we build **[X]** for **[User Segment]**, we expect **[Outcome]** because
+> of **[Reason]**.
+
+---
+
+## 4. Proposed Solution & User Stories (The "What")
+
+_In 150 words or less, tell us what this piece of work is about._
+
+High-level logic only. Include links to Figma mocks or Miro boards if it helps
+tell the story.
+
+Use this syntax to document your user stories:
+
+> As a **[User]**, I want to **[Action]** so that **[Value]**.
+
+---
+
+## 5. Product Non-Goals (The "Not Now")
+
+_Crucial for preventing scope creep and ensuring a "punchy" outcome._
+
+What are we **explicitly not building** to move fast and maintain focus?
+
+| Non-goal | Rationale | Source or confidence |
+|---|---|---|
+| | | |
+
+---
+
+## 6. Impacts & Dependencies (The "Who")
+
+**Team delivering & help needed from** 💛
+List teams across Products and Moodle (e.g., Architecture, UX) that will need
+to be involved, consulted, or impacted in the delivery.
+
+**Stakeholders Impacted** 🛠
+Who will be affected by this change?
+
+**Risks** ⛔
+What could go wrong with this work? Don't forget to call out potential technical
+risks (breaking changes, API impacts, etc).
+
+**Open Questions**
+
+Blocking (must be resolved before this PRD can bind):
+
+| Question | Suggested owner |
+|---|---|
+| | |
+
+Non-blocking (track during delivery):
+
+| Question | Suggested owner |
+|---|---|
+| | |

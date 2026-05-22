@@ -195,9 +195,9 @@ and the Phase 1 handoff summary as context. Moodledisco will:
    open unknowns
 
 Moodledisco writes the full synthesis doc to `disco-[feature-slug].md` and
-`~/Claude/Projects/MoodleOS/docs/discovery/DISCO_[InitiativeName].md`, then
-returns a handoff summary. In orchestrated mode, moodledisco does not present
-the doc or ask for approval — Checkpoint 1 owns that gate.
+to the current project workspace under `docs/discovery/`, then returns a handoff
+summary. In orchestrated mode, moodledisco does not present the doc or ask for
+approval — Checkpoint 1 owns that gate.
 
 If moodledisco hits the evidence quality gate (no validated customer signal
 found beyond Granola meeting notes), it will surface a push back. Wait for
@@ -236,17 +236,18 @@ Incorporate any feedback by updating `disco-[feature-slug].md`, then proceed.
 Invoke the `moodleprd` skill in orchestrated mode. Pass the initiative name and
 the discovery handoff summary as context. Moodleprd will:
 
-1. Read the PRD template at `~/Claude/Projects/MoodleOS/docs/prd/PRD_Template.md`
-2. Read workspace context files (`context/projects.md`, `decision-log.md`,
-   `context/people.md`)
+1. Look for the PRD template in the current project workspace (under
+   `docs/prd/PRD_Template.md` or the workspace root)
+2. Read any workspace context files that exist (`context/projects.md`,
+   `decision-log.md`, `context/people.md`)
 3. Search Confluence, Google Drive, and Granola for additional PRD-relevant
    context
 4. Draft the PRD using the six mandatory section headings, verbatim, with
    Moodle-specific conventions: certainty labelling, problem basis statement,
    non-goals table, honest metric baselines, blocking and non-blocking open
    questions
-5. Save to `prd-[feature-slug].md` and
-   `~/Claude/Projects/MoodleOS/docs/prd/PRD_[InitiativeName].md`
+5. Save to `prd-[feature-slug].md` and to the current project workspace under
+   `docs/prd/PRD_[InitiativeName].md`
 
 Read `disco-[feature-slug].md` if moodleprd needs detail beyond the handoff
 summary.
@@ -281,8 +282,9 @@ and tickets?"
 **Wait for explicit approval before proceeding.** Incorporate any edits to the PRD
 file before moving on.
 
-If the user wants the PRD pushed to Confluence, do that now. Create a new page in
-Kieran Gray's personal Confluence space. Ask which space if not obvious from context.
+If the user wants the PRD pushed to Confluence, do that now. Ask the user for
+the Confluence destination: which space to publish to, and optionally which
+parent page to nest under. Create the page at the specified location.
 
 **Checkpoint 2 handoff — after approval, carry forward only:**
 > "Approved PRD: `prd-[feature-slug].md`. Scope confirmed: [feature name, v1
@@ -390,14 +392,14 @@ Each ticket should have:
 Group tickets by experience area or phase, consistent with how Section 4 of the
 PRD is structured.
 
-**Save the full ticket breakdown to `backlog-[feature-slug].md` and also to
-`~/Claude/Projects/MoodleOS/docs/prd/BACKLOG_[InitiativeName].md`.**
+**Save the full ticket breakdown to `backlog-[feature-slug].md` and also to the
+current project workspace under `docs/prd/BACKLOG_[InitiativeName].md`.**
 
 **Publishing options — offer both, require explicit approval for each:**
 
-Option A — Confluence: Create a new page in Kieran Gray's personal Confluence
-space, as a child of the PRD page if it exists there. Title:
-"[Initiative Name] — Backlog".
+Option A — Confluence: Ask the user for the Confluence destination (space key
+and optional parent page) where the backlog should be published. Create the page
+at the specified location. Title: "[Initiative Name] — Backlog".
 
 Option B — Jira: Use the Jira MCP to create each ticket in the relevant project.
 Confirm the target project key with the user before creating anything. Create
