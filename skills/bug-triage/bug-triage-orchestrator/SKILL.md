@@ -66,7 +66,7 @@ remove the previous `triage/` label before applying the new one.
 
 **The file system is your memory. Use it.** Full outputs go to disk. Only compact summaries and JSON handoff blocks stay in active context. If a later step needs detail, read the file.
 
-All context files live in `skills/bug-triage-orchestrator/context/`. Create this directory if it does not exist.
+All context files live in `skills/bug-triage/bug-triage-orchestrator/context/`. Create this directory if it does not exist.
 
 ### `run-index.json`
 
@@ -115,7 +115,7 @@ Append-only log of all orchestrator runs. Never truncate.
 
 ### `triage-notes/` directory
 
-Create `skills/bug-triage-orchestrator/context/triage-notes/` if it does not exist before writing any ticket files.
+Create `skills/bug-triage/bug-triage-orchestrator/context/triage-notes/` if it does not exist before writing any ticket files.
 
 One markdown file per ticket, written after Step 5 completes. These become the permanent record of what the pipeline found and what action was taken.
 
@@ -126,8 +126,8 @@ One markdown file per ticket, written after Step 5 completes. These become the p
 Before running the pipeline for any ticket:
 
 1. **Initialise directories.** Ensure the following exist, creating them if they do not:
-   - `skills/bug-triage-orchestrator/context/`
-   - `skills/bug-triage-orchestrator/context/triage-notes/`
+   - `skills/bug-triage/bug-triage-orchestrator/context/`
+   - `skills/bug-triage/bug-triage-orchestrator/context/triage-notes/`
 
 2. **Check `run-index.json`.** If the ticket is present with `status: complete`, report the cached result and stop. Do not re-run.
    - Exception: if invoked with `--recheck`, remove the existing entry and proceed.
@@ -144,7 +144,7 @@ Before running the pipeline for any ticket:
 
 ### Step 1: Quality and completeness check
 
-Read `skills/bug-triage-quality-check/SKILL.md` and follow its instructions fully for the target ticket.
+Read `skills/bug-triage/bug-triage-quality-check/SKILL.md` and follow its instructions fully for the target ticket.
 
 Step 1 returns a structured JSON handoff block. Capture it.
 
@@ -169,18 +169,18 @@ Step 1 returns a structured JSON handoff block. Capture it.
 Steps 2, 3, and 4 have no inter-dependencies. Execute them together — start all three before waiting for any results. For each step, check whether the skill is available before invoking:
 
 **Step 2 — Recent changes analysis**
-Read `skills/bug-triage-recent-changes/SKILL.md` and follow its instructions.
+Read `skills/bug-triage/bug-triage-recent-changes/SKILL.md` and follow its instructions.
 **Skip condition:** If the SKILL.md is not present or GitHub access has not been confirmed, set step 2 result to `SKIPPED` and note this in the triage note.
 
 **Step 3 — Bug validation**
-Read `skills/bug-triage-validation/SKILL.md` and follow its instructions.
-Before invoking, read `skills/bug-triage-shared/wontfix-patterns.md` and pass its full content
+Read `skills/bug-triage/bug-triage-validation/SKILL.md` and follow its instructions.
+Before invoking, read `skills/bug-triage/bug-triage-shared/wontfix-patterns.md` and pass its full content
 to Step 3 as the `wontfix_patterns_content` input. Step 3 uses this to check for known won't-fix
 categories without needing to locate the file itself.
 **Skip condition:** If the SKILL.md is not present, set step 3 result to `SKIPPED`.
 
 **Step 4 — Test coverage check**
-Read `skills/bug-triage-test-coverage/SKILL.md` and follow its instructions.
+Read `skills/bug-triage/bug-triage-test-coverage/SKILL.md` and follow its instructions.
 **Skip condition:** If the SKILL.md is not present, or if Step 3 returned `WORKING_AS_INTENDED`, skip Step 4 (no value in checking coverage for non-bugs).
 
 Collect JSON handoff blocks from all three steps before proceeding.
@@ -201,7 +201,7 @@ If Step 3 returns `outcome: WORKING_AS_INTENDED` and `wontfix_pattern_matched: t
 
 **Context checkpoint before Step 5.** Confirm that active context contains only: the compact ticket summary (issue key, summary, component, affects version, description excerpt), and the JSON handoff blocks from Steps 1–4. Everything else is on disk. If this is not the case, write any remaining full outputs to their respective files before continuing.
 
-Read `skills/bug-triage-assignment/SKILL.md` and follow its instructions.
+Read `skills/bug-triage/bug-triage-assignment/SKILL.md` and follow its instructions.
 
 Pass the following context to Step 5:
 - Compact ticket summary (issue key, summary, component, affects version, description excerpt)

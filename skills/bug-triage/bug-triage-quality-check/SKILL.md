@@ -38,7 +38,7 @@ If no issue key is provided, run the default Jira filter (see [JQL Filter](#jql-
 
 ### 1. Check the ticket index first
 
-Before fetching from Jira, check `skills/bug-triage-quality-check/context/triage-index.json` to see if the issue key has already been processed.
+Before fetching from Jira, check `skills/bug-triage/bug-triage-quality-check/context/triage-index.json` to see if the issue key has already been processed.
 
 - If found with outcome `COMPLETE` or `INCOMPLETE` and `comment_status: posted`: report the cached result and stop. No re-processing.
 - If found with `comment_status: pending_review`: surface the existing draft comment from `pending-review.md` and ask the human whether to post, edit, or discard it.
@@ -156,7 +156,7 @@ Reply with: **post** | **edit [your feedback]** | **discard**
 
 ## Context File Outputs
 
-The skill writes to three local files in `skills/bug-triage-quality-check/context/`. Create this directory if it does not exist.
+The skill writes to three local files in `skills/bug-triage/bug-triage-quality-check/context/`. Create this directory if it does not exist.
 
 ### `triage-index.json`
 

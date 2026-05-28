@@ -7,7 +7,7 @@ candidate and surfaces it to a human for confirmation before closing or labellin
 The agent does not apply `triage/wontfix` autonomously — this file accelerates Step 3 by
 making known patterns explicit, but human confirmation is always required.
 
-**Location:** `skills/bug-triage-shared/wontfix-patterns.md` — shared across the triage pipeline. Referenced by the orchestrator (which passes content to Step 3) and directly by Step 3 when run standalone.
+**Location:** `skills/bug-triage/bug-triage-shared/wontfix-patterns.md` — shared across the triage pipeline. Referenced by the orchestrator (which passes content to Step 3) and directly by Step 3 when run standalone.
 **Maintained by:** Alpha team. Add patterns as they are identified during triage runs.
 **Last updated:** 2026-05-28
 
