@@ -14,15 +14,15 @@ Each skill defines its inputs, step-by-step instructions, guardrails, and expect
 
 ## Skills
 
-### Bug Triage: Quality and Completeness Check (`bug-triage-quality-check`)
+### Bug Triage (`bug-triage/`)
 
 **Part of:** Alpha team bug triage automation workflow (Sprint 2026-I2.1)
 
-Step 1 of a multi-step bug triage pipeline. Given an MDL Jira issue key, it fetches the ticket and checks it against Moodle's public tracker standards — reproduction steps, expected vs actual behaviour, affected version, and sufficient context. 
+A 5-step pipeline that takes a Jira bug ticket, runs it through a sequence of automated checks, and produces a structured triage note. The orchestrator coordinates the full sequence; each step skill can also run standalone.
 
-- Incomplete tickets: applies `needs_more_info` label, drafts a reporter comment for human review before posting
-- Complete tickets: applies `AI_triaged` label and passes a structured result to the next step
-- Writes a local triage log and ticket index to support the end-of-sprint review
+Trigger with `/triage-bug MDL-XXXXX` (single ticket), a batch of keys, or no arguments to run the default JQL filter across the Alpha team's component queue.
+
+See `bug-triage/README.md` for the full pipeline overview, triage labels, human checkpoints, and how to add new step skills.
 
 **Requires:** sooperset Atlassian MCP connected to moodle.atlassian.net
 
@@ -68,4 +68,4 @@ These skills are under active development during Sprint 2026-I2.1 (May–June 20
 
 ## Contributing
 
-Skills are added as the team builds them. Each skill lives in its own directory and is self-contained. If you're building a new step in the bug triage workflow, follow the existing structure and interface contract in `bug-triage-quality-check/SKILL.md` — specifically the JSON handoff block, which is the contract between steps.
+Skills are added as the team builds them. Each skill lives in its own directory and is self-contained. If you're building a new step in the bug triage workflow, follow the existing structure and the JSON handoff contract defined in `bug-triage/bug-triage-orchestrator/SKILL.md` — that contract is what the orchestrator uses to route between steps.
