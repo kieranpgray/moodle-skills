@@ -1,8 +1,6 @@
 # moodle-skills
 
-A collection of AI workflow skills for Moodle product and engineering work, built for use with [Claude Cowork](https://claude.ai) and the Claude Agent SDK.
-
-Skills in this repo are developed by the Moodle Alpha team and Platform Solutions group. They are designed to automate or augment specific, repeatable workflows — not to be general-purpose assistants.
+A collection of AI workflow skills for Moodle product and engineering work. They are designed to automate or augment specific, repeatable workflows — not to be general-purpose assistants.For Product and Design staff, use these within Claude. For engineering, go nuts.
 
 ---
 
