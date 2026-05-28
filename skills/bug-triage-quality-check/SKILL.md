@@ -218,7 +218,7 @@ Append-only human-readable log of all triage runs. Used for the end-of-sprint qu
 - **Outcome:** INCOMPLETE
 - **Missing:** Steps to reproduce, expected behaviour, actual behaviour
 - **Label applied:** needs_more_info
-- **Comment:** Posted (confirmed by Kieran, 2026-05-21 11:00)
+- **Comment:** Posted (confirmed by [reviewer], 2026-05-21 11:00)
 - **Summary:** Quiz submission fails on mobile
 - **Reporter:** Jane Smith
 
@@ -229,34 +229,22 @@ Append-only human-readable log of all triage runs. Used for the end-of-sprint qu
 
 ## JQL Filter
 
-> ⚠️ This JQL is a draft and must be confirmed with the team before use in production. The component list is a placeholder.
-
 ```jql
 project = MDL
-  AND issuetype = Bug
-  AND created >= -14d
-  AND component in (
-    "Assignment",
-    "Badges",
-    "Competencies",
-    "Course",
-    "Gradebook",
-    "Groups",
-    "H5P",
-    "LTI",
-    "MoodleNet",
-    "Quiz",
-    "SCORM"
-  )
+  AND resolution = Unresolved
+  AND filter = "Education - Alpha Team components"
+  AND created >= -7d
+  AND type = BUG
   AND labels not in ("AI_triaged", "needs_more_info")
 ORDER BY created ASC
 ```
 
 **Notes on this JQL:**
-- `created >= -14d` — catches bugs from the last 14 days; adjust the window if running catch-up.
-- `component in (...)` — **placeholder list only**. Replace with the definitive Alpha team component ownership list (to be confirmed with the team).
-- The `labels not in` clause skips tickets already processed by this agent. Remove this clause if you want to re-process or audit previous runs. The `triage-index.json` provides a second layer of protection against re-processing regardless of this clause.
-- Consider adding `AND priority in (Blocker, Critical, Major)` if you want to prioritise severity over recency during the experiment window.
+- `filter = "Education - Alpha Team components"` — the confirmed saved filter for Alpha team component ownership. No manual component list needed.
+- `created >= -7d` — 7-day window matches the team's default triage cadence. Extend to `-14d` if running catch-up after a gap.
+- `resolution = Unresolved` — skips tickets that have already been resolved.
+- The `labels not in` clause skips tickets already processed by this agent. Remove it to re-process or audit previous runs. The `triage-index.json` provides a second layer of protection against re-processing regardless.
+- Consider adding `AND priority in (Blocker, Critical, Major)` to prioritise severity over recency during high-volume periods.
 - `external_confirmed` label handling: if a ticket has this label, skip check #1 (steps to reproduce sufficiency) — treat reproduction as confirmed per the experiment guardrails.
 
 ---
