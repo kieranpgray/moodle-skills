@@ -169,3 +169,35 @@ Use:
 git log
 git diff GOOD..BAD
 git bisect
+```
+
+---
+
+## Handoff to Orchestrator
+
+When called by the orchestration skill, return a JSON handoff block after completing the investigation:
+
+```json
+{
+  "step": 2,
+  "outcome": "REGRESSION_CANDIDATE | CLEAR | AMBIGUOUS",
+  "human_review_required": true,
+  "regression_window": {
+    "last_known_good": "version/commit/date or null",
+    "first_known_bad": "version/commit/date or null"
+  },
+  "causal_candidates": ["commit/PR/change or empty"],
+  "confidence": "HIGH | MEDIUM | LOW",
+  "summary": "<max 100 words>",
+  "recommended_actions": ["next steps or empty"]
+}
+```
+
+**Outcome values:**
+- `REGRESSION_CANDIDATE` — causal change identified with medium or high confidence
+- `CLEAR` — no regression evidence found
+- `AMBIGUOUS` — candidates identified but causality unconfirmed, or window too wide to narrow
+
+Set `human_review_required: true` when `outcome` is `AMBIGUOUS`. Otherwise `false`.
+
+Write the full investigation detail to the step file on disk. Keep this block concise — the `summary` field must not exceed 100 words.
