@@ -169,7 +169,7 @@ Step 1 returns a structured JSON handoff block. Capture it.
 Steps 2, 3, and 4 have no inter-dependencies. Execute them together — start all three before waiting for any results. For each step, check whether the skill is available before invoking:
 
 **Step 2 — Recent changes analysis**
-Read `skills/bug-triage/bug-triage-recent-changes/SKILL.md` and follow its instructions.
+Read `skills/bug-triage/triage-find-regression/SKILL.md` and follow its instructions.
 **Skip condition:** If the SKILL.md is not present or GitHub access has not been confirmed, set step 2 result to `SKIPPED` and note this in the triage note.
 
 **Step 3 — Bug validation**
