@@ -39,7 +39,7 @@ Human reviews and confirms. Note posted to Jira.
 | Skill | Step | What it does |
 |-------|------|--------------|
 | `bug-triage-quality-check` | 1 | Checks ticket completeness against Moodle tracker standards |
-| `bug-triage-recent-changes` | 2 | Queries GitHub commits for regression candidates |
+| `triage-find-regression` | 2 | Queries GitHub commits for regression candidates |
 | `bug-triage-validation` | 3 | Cross-references reported behaviour against Moodle docs |
 | `bug-triage-test-coverage` | 4 | Checks test coverage in the affected code area |
 | `bug-triage-assignment` | 5 | Determines outcome and produces the final triage note |
