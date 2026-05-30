@@ -33,8 +33,8 @@ Each step skill can also run standalone — this orchestrator is one entry point
 **Guardrails:**
 - The agent does not close, reject, or resolve Jira tickets autonomously.
 - The agent does not assess security priority — all security flags are immediate human handoffs.
-- All agent-processed tickets receive a `triage/` label to maintain a clear audit trail.
-- No comment is posted to Jira without explicit human confirmation.
+- **Every Jira mutation (label application, label removal, comment post) requires explicit human confirmation before the call is made.** Present the intended action and wait for confirmation. This applies to `triage/` state label transitions as well as comment posts.
+- All agent-processed tickets receive a `triage/` label to maintain a clear audit trail (subject to human confirmation above).
 
 ---
 
@@ -149,15 +149,32 @@ Read `skills/bug-triage/bug-triage-quality-check/SKILL.md` and follow its instru
 Step 1 returns a structured JSON handoff block. Capture it.
 
 **If `outcome: INCOMPLETE`:**
-- The ticket cannot proceed. Step 1 will have drafted a reporter comment and applied `needs_more_info` label.
-- Apply label `triage/needs-info` (replacing any prior `triage/` label).
+- The ticket cannot proceed. Step 1 will have drafted a reporter comment and (subject to confirmation) applied `needs_more_info`.
+- **Confirm before applying state label:**
+
+  ```
+  Ready to apply label `triage/needs-info` to MDL-XXXXX (replacing any prior triage/ label).
+  Confirm? [apply / skip]
+  ```
+
+  - If `apply`: apply `triage/needs-info`, removing any prior `triage/` label.
+  - If `skip`: note in `run-index.json` that the state label was not applied.
+
 - Update `run-index.json`: `status: incomplete_reporter`.
 - Surface the draft comment for human review per Step 1's instructions.
 - **Stop the pipeline for this ticket.** Do not proceed to Step 2.
 - Log to `run-log.md`.
 
 **If `outcome: COMPLETE`:**
-- Apply label `triage/in-progress` (remove `needs_more_info` label if present, or any other `triage/` label).
+- **Confirm before applying state label:**
+
+  ```
+  Ready to apply label `triage/in-progress` to MDL-XXXXX (removing needs_more_info and any prior triage/ label).
+  Confirm? [apply / skip]
+  ```
+
+  - If `apply`: apply `triage/in-progress`, removing `needs_more_info` and any prior `triage/` label.
+  - If `skip`: note in `run-index.json` that the state label was not applied; continue the pipeline.
 - **Write ticket data to disk.** Save the full ticket payload to `context/triage-notes/MDL-XXXXX-ticket.json`. From this point forward, carry only these fields in active context: `issue_key`, `summary`, `component`, `affects_version`, `description` (first 200 characters). Do not re-fetch from Jira in subsequent steps — read the file if detail is needed.
 - **Discard Step 1 SKILL.md instructions from active context.** Retain only the JSON handoff block.
 - Proceed to Steps 2–4.
@@ -266,7 +283,16 @@ For batch runs, present all pending human review items together after the pipeli
 Use when a reporter has updated a ticket that was previously marked `triage/needs-info`.
 
 1. Remove the existing `run-index.json` entry for that ticket.
-2. Remove the `needs_more_info` and `triage/needs-info` labels from the ticket.
+2. **Confirm before removing labels:**
+
+   ```
+   Ready to remove labels `needs_more_info`, `triage/needs-info` from MDL-XXXXX.
+   Confirm? [remove / cancel]
+   ```
+
+   - If `remove`: call `jira_update_issue` to remove the labels.
+   - If `cancel`: stop. Do not re-run the pipeline.
+
 3. Run the full pipeline from Step 1.
 
 ---

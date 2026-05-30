@@ -20,7 +20,7 @@ It checks whether a new bug ticket from the team's Jira components filter contai
 
 **Guardrails:**
 - This skill does not close, reject, or resolve tickets autonomously.
-- **Test phase — no auto-posting of comments.** When a ticket is incomplete, the skill drafts a reporter comment and returns it to the human for review. The human must explicitly confirm (or request edits) before the comment is posted to Jira. Labels may be applied immediately as they are internal and reversible.
+- **Every Jira mutation requires explicit human confirmation before the call is made.** This includes label applications as well as comment posts. Present the intended action and wait for `apply` / `skip` (for labels) or `post` / `edit` / `discard` (for comments) before proceeding.
 - If a ticket has the `external_confirmed` label, treat reproduction as confirmed and skip the reproduction-steps sufficiency check.
 
 ---
@@ -78,7 +78,15 @@ A bug report meets minimum standard when it contains **all five** of the followi
 
 **If INCOMPLETE** (one or more of checks 1–5 fail):
 
-1. **Apply the label immediately:** Apply `needs_more_info` using `mcp__mcp-atlassian-sooperset__jira_update_issue` with `{"labels": [...existing_labels, "needs_more_info"]}`. This is an internal, reversible action that does not notify the reporter.
+1. **Confirm before applying label:** Present the intended action to the human before calling `jira_update_issue`:
+
+   ```
+   Ready to apply label `needs_more_info` to MDL-XXXXX.
+   Confirm? [apply / skip]
+   ```
+
+   - If `apply`: call `mcp__mcp-atlassian-sooperset__jira_update_issue` with `{"labels": [...existing_labels, "needs_more_info"]}`.
+   - If `skip`: note in context files and triage note that the label was not applied; continue to draft the comment as normal.
 
 2. **Draft a reporter comment** that:
    - Thanks them for reporting the issue (per Moodle community norms: always show gratitude)
@@ -105,7 +113,16 @@ A bug report meets minimum standard when it contains **all five** of the followi
 
 **If COMPLETE** (all five checks pass):
 
-1. **Apply the label immediately:** Apply `AI_triaged` using `mcp__mcp-atlassian-sooperset__jira_update_issue` with `{"labels": [...existing_labels, "AI_triaged"]}`.
+1. **Confirm before applying label:** Present the intended action to the human before calling `jira_update_issue`:
+
+   ```
+   Ready to apply label `AI_triaged` to MDL-XXXXX.
+   Confirm? [apply / skip]
+   ```
+
+   - If `apply`: call `mcp__mcp-atlassian-sooperset__jira_update_issue` with `{"labels": [...existing_labels, "AI_triaged"]}`.
+   - If `skip`: note in context files and triage note that the label was not applied; outcome is still COMPLETE and the pipeline proceeds.
+
 2. No comment is needed — do not post anything to Jira.
 3. **Write to context files:** Add entry to `triage-index.json` and `triage-log.md`.
 4. Set outcome as `COMPLETE — proceed to Step 2`.
@@ -134,7 +151,7 @@ Return a structured triage note as your response. For INCOMPLETE tickets, presen
 **Positive signals noted:** [list or "none"]
 
 **Actions taken:**
-- [Label applied]
+- [Label: APPLIED / SKIPPED BY HUMAN / Not applicable — specify which label]
 - [Comment: PENDING HUMAN REVIEW / Posted / Not applicable]
 
 **Next step:** [Proceed to Step 2 / Awaiting human review of draft comment / Awaiting reporter response]
@@ -290,6 +307,7 @@ When called by the orchestration skill, return a structured JSON result alongsid
   "outcome": "COMPLETE" | "INCOMPLETE",
   "missing_fields": ["list of failed checks, or empty"],
   "labels_applied": ["AI_triaged" | "needs_more_info"],
+  "labels_skipped": ["list of labels the human chose not to apply, or empty"],
   "comment_status": "pending_review" | "posted" | "not_applicable" | "discarded",
   "proceed_to_step_2": true | false
 }
