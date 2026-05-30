@@ -10,7 +10,7 @@ The agent assists. Humans remain accountable for every decision.
 
 The pipeline takes a Jira bug ticket, runs it through a sequence of automated checks, and produces a structured triage note. The note tells a reviewer what was found, whether the bug is valid, how complex the fix looks, and what action to take.
 
-No comment is posted to Jira and no label is finalised without explicit human confirmation.
+No change is made to Jira — no label applied, no label removed, no comment posted — without the agent first pausing and asking for explicit confirmation.
 
 ---
 
@@ -88,13 +88,24 @@ Every ticket in the pipeline carries exactly one `triage/` label. Labels are mut
 
 ## Human checkpoints
 
-The agent pauses and waits for explicit confirmation at each of these points:
+The agent pauses and waits for explicit confirmation before every Jira action. This covers every label application, label removal, and comment post — not just the final ones.
 
-1. **Step 1 incomplete** — draft reporter comment shown for review before posting to Jira
-2. **Step 2 ambiguous** — regression candidates surfaced; human decides whether to continue or investigate manually
-3. **Step 3 wontfix match** — human confirms before `triage/wontfix` is applied
-4. **Security signal** — immediate stop; no public labels or comments; human handoff only
-5. **Final triage note** — always requires confirmation before posting to Jira
+**Label confirmations (every run):**
+
+- **Step 1 complete** — before applying `AI_triaged` to the ticket, the agent shows what it is about to do and asks `[apply / skip]`
+- **Step 1 incomplete** — before applying `needs_more_info`, same `[apply / skip]` prompt
+- **Orchestrator — pipeline start** — before applying `triage/in-progress` or `triage/needs-info`, same `[apply / skip]` prompt
+- **Re-check** — before removing `needs_more_info` and `triage/needs-info` labels, `[remove / cancel]` prompt
+
+**Decision checkpoints (situation-dependent):**
+
+- **Step 1 incomplete** — draft reporter comment shown for review before posting; `[post / edit / discard]`
+- **Step 2 ambiguous** — regression candidates surfaced; human decides whether to continue or investigate manually
+- **Step 3 wontfix match** — human confirms before `triage/wontfix` is applied
+- **Security signal** — immediate stop; no public labels or comments; human handoff only
+- **Final triage note** — full note shown for review before posting; `[post / edit / discard]`
+
+Choosing `skip` on a label prompt does not stop the pipeline — the analysis continues, and the triage note records that the label was not applied.
 
 ---
 
@@ -159,6 +170,5 @@ The orchestrator's `SKILL.md` defines the expected JSON handoff shape for each s
 
 - The agent does not close, reject, or resolve Jira tickets.
 - The agent does not assess security priority. All security flags are human handoffs.
-- No comment is posted to Jira without explicit human confirmation.
-- `triage/wontfix` is never applied without human confirmation.
-- All agent-processed tickets receive a `triage/` label for auditability.
+- Every Jira mutation — label application, label removal, or comment post — requires explicit human confirmation before the call is made. There are no silent writes to the tracker.
+- All agent-processed tickets receive a `triage/` label for auditability (subject to human confirmation above).
