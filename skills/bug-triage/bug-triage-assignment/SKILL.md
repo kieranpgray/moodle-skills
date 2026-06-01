@@ -63,7 +63,7 @@ If security signals are present: return `outcome: SECURITY_ESCALATION` immediate
 Summarise what each completed step found:
 - **Step 1:** Completeness (already passed to reach Step 5)
 - **Step 2:** Regression candidate(s) if found, or clear, or skipped
-- **Step 3:** Genuine bug / working as intended / ambiguous — and whether a won't-fix pattern matched
+- **Step 3:** Genuine bug / working as intended / ambiguous — and whether a won't-fix pattern matched. Note the `source_type` field: if `llm_knowledge` or `mixed`, the assessment was not grounded in live documentation.
 - **Step 4:** Coverage status (exists / gaps / none / skipped)
 
 Note how many steps were skipped. If two or more steps were skipped, overall confidence is LOW.
@@ -119,7 +119,7 @@ Use this structure:
 
 **Recent changes (Step 2):** [Summary of findings, or "Not assessed — GitHub access unavailable."]
 
-**Bug validation (Step 3):** [Genuine bug / Working as intended / Ambiguous] — [one sentence on evidence, with doc link if applicable]
+**Bug validation (Step 3):** [Genuine bug / Working as intended / Ambiguous] — [one sentence on evidence, with doc link if applicable]. [If source_type is "llm_knowledge" or "mixed": append "Note: assessment based on LLM knowledge — live documentation could not be accessed."]
 
 **Test coverage (Step 4):** [Coverage exists / Gaps found / No coverage / Not assessed] — [one sentence on what was found]
 
