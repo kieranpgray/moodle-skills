@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TEMPLATE: Moodle prototype shell (throwaway, not for merge)</title>
+
+<!-- Fonts + icons via CDN for Figma fidelity (needs network on first open;
+     degrades to system font + missing-glyph boxes offline). -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<style>
+  /*
+    ============================================================
+    MOODLE PROTOTYPE SHELL: starting point for a new prototype
+    ============================================================
+
+    WHAT THIS IS
+    The page furniture, and nothing else: responsive top navigation, left
+    course index (drag-resizable), right block drawer, and an empty content
+    column that switches between LIMITED WIDTH and FULL WIDTH. Copy this file,
+    rename it PROTOTYPE-<thing>.html, and build your screen inside
+    #prototype-content. Everything outside that slot is already decided.
+
+    Extracted from PROTOTYPE-courseindex-drawer-resize.html, which carries the
+    resolved decisions on nav geometry, drawer behaviour and breakpoints. If a
+    measure here disagrees with that prototype, that prototype wins: it is the
+    one that was reviewed against Figma.
+
+    HOW TO USE IT
+    1. Copy → rename → change the <title> and this header comment to state the
+       ONE design question the prototype answers.
+    2. Replace the placeholder in #prototype-content.
+    3. Point the course index at your own sections (the SECTIONS array in JS).
+    4. Set the DEFAULTS block at the bottom of the JS to the state a reviewer
+       should land on (width mode, drawers open/closed, nav cap, guides).
+    5. Fill in the NOTES block at the very bottom before you share it.
+
+    WHAT IS DELIBERATELY NOT HERE
+    Edit-mode row controls, add/more menus, drag-to-reorder, annotations,
+    course-page content. Those live in PROTOTYPE-courseindex-drawer-resize.html
+    and PROTOTYPE-course-settings.html. Lift them across when the question
+    you are answering actually needs them.
+  */
+
+  :root{
+    /* EVERY value below is a Moodle Design System (MDS) token, renamed short.
+       Source of truth: lib/bundles/design-system/scss/tokens/ in a Moodle
+       checkout ($mds-* names in the comments). proto-lint `mds-values` warns
+       on any :root colour/spacing/radius that isn't in MDS. Need a value that
+       isn't here? Look it up there and add it with its $mds- name; don't
+       invent one, and don't inline a hex below. */
+    /* type: $mds-font-family-base is Noto Sans. Non-negotiable; `font-noto` fails otherwise. */
+    --font-family:"Noto Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-code:Menlo, Monaco, Consolas, monospace;                /* $mds-font-family-code */
+    --fs-sm:.875rem; --fs-md:1rem; --fs-lead:1.25rem;                /* $mds-font-size-paragraph-small/default/lead */
+    --fs-h6:1rem; --fs-h5:1.25rem; --fs-h4:1.5rem; --fs-h3:1.75rem; --fs-h2:2rem; --fs-h1:2.5rem; /* $mds-font-size-headings-* */
+    --lh-sm:1.0875rem; --lh-md:1.5rem; --lh-lead:2.5rem;             /* $mds-line-height-paragraph-* */
+    --fw-regular:400; --fw-medium:500; --fw-semibold:600; --fw-bold:700; /* $mds-font-weight-* */
+    /* spacing: $mds-spacing-xxs/xs/sm/md/lg/xl/xxl */
+    --sp-xxs:4px; --sp-xs:8px; --sp-sm:12px; --sp-md:16px; --sp-lg:20px; --sp-xl:32px; --sp-xxl:48px;
+    /* radius: $mds-border-radius-xs/sm/md/lg/xl/pill */
+    --r-xs:4px; --r-sm:6px; --r-md:8px; --r-lg:12px; --r-xl:16px; --r-pill:800px;
+    /* colour */
+    --text-default:#1d2125; --text-subtle:#495057; --text-muted:#6a737b;   /* $mds-text-default/subtle/muted */
+    --text-inverse:#f8f9fa;                                                 /* $mds-text-inverse */
+    --bg-subtle:#f8f9fa; --bg-strong:#e9ecef;                               /* $mds-bg-surface-subtle/strong */
+    --border-subtle:#e9ecef; --border-default:#dee2e6; --border-ring:#8f959e; /* $mds-border-subtle/default, $mds-border-interactive-secondary-default */
+    --primary:#0f6cbf; --primary-dark:#0c5699; --primary-active:#094173;    /* $mds-bg-interactive-primary-default/hover/active */
+    --primary-light:#e7f0f9; --primary-subtle:#cfe2f2;                      /* $mds-bg-feedback-primary-light/subtle */
+    --surface:#ffffff; --page-bg:#ffffff;                                   /* $mds-bg-surface-default */
+    --ci-row-hover:#e9ecef;                                                 /* $mds-bg-nav-pill-hover */
+    /* feedback: $mds-bg-feedback-{danger,success,warning,info}-default / -light */
+    --danger:#ca3120; --danger-light:#faeae9;
+    --success:#357a32; --success-light:#ebf2ea;
+    --warning:#f0ad4e; --warning-light:#fdf7ed;
+    --info:#006778; --info-light:#e5f2f4;
+    /* activity icons: $mds-activity-icon-{purpose}-icon / -bg. Purposes in core:
+       assessment, collaboration, communication, content(=file), interactive, other. */
+    --activity-magenta:#db1a74; --activity-magenta-bg:#f8d1e3;             /* assessment */
+    --activity-teal:#008196; --activity-teal-bg:#cce6ea;                   /* file / resource */
+    --activity-purple:#6610f2; --activity-purple-bg:#e0cffc;               /* collaboration */
+    --activity-orange:#cc5e13; --activity-orange-bg:#ffe3d1;               /* communication */
+    /* shadows: $mds-color-sm/md/lg with $mds-blur-*, $mds-offset-* */
+    --shadow-sm:0 .125rem .25rem rgba(0,0,0,.08); --shadow-md:0 .5rem 1rem rgba(0,0,0,.15); --shadow-lg:0 1rem 3rem rgba(0,0,0,.17);
+    /* derived: text/icons ON a primary-filled surface, hover tints, overlay,
+       shadows, the one decorative gradient. Every colour a rule needs is here;
+       proto-lint fails any literal that isn't. */
+    --on-primary:#ffffff; --on-primary-muted:rgba(255,255,255,.75);
+    --hover-tint:rgba(0,0,0,.04); --hover-tint-strong:rgba(0,0,0,.06);
+    --overlay:rgba(0,0,0,.4);
+    --shadow-drawer:8px 0 24px rgba(0,0,0,.10);
+    --focus-ring:2px solid var(--primary);
+    /* proto-lint-disable mds: avatar placeholder art and measurement-guide
+       colours are dev scaffolding, not UI colour. Real avatars are images. */
+    --gradient-avatar:linear-gradient(135deg,#f0a878,#c9805a);
+    --g-nav:#1971c2; --g-shell:#f08c00; --g-extent:#2f9e44; --g-col:#d6336c;
+    /* proto-lint-enable */
+
+    /* layout: nav geometry per the FIGMA HEADER COMPONENT (node 105:189).
+         - bar height 64px = spacing/sm 12 + 40 content + 12
+         - surface bg/surface/subtle #f8f9fa, 1px border/subtle #e9ecef below
+         - contents inset spacing/lg 20px (spacing/md 16px on mobile)
+         - 1440 is a real MAX-WIDTH: past it the bar surface still spans the
+           viewport, but the inner row caps and centres, so contents always
+           span 1400px.
+       The nav cap does NOT change with the page's width mode: a full-width
+       page must not make the top navigation jump wider. */
+    --shell-max:1440px; --shell-pad:20px;
+    --nav-h:64px;
+    --ci-width:285px; --ci-min:285px; --ci-max:640px;
+    --cb-width:315px;      /* right block drawer: fixed, no drag handle */
+    --sitenav-width:300px; /* hamburger site-nav overlay */
+    --content-max:830px;   /* $course-content-maxwidth: Boost's real value */
+    --btn:40px;
+  }
+
+  *{ box-sizing:border-box; }
+  /* min-height, NOT height. `height:100%` on html/body caps the document at
+     the viewport and any content taller than one screen becomes silently
+     unscrollable. That trap shipped in this template and was fixed twice
+     downstream (course-builder, workshop) before being fixed here. */
+  html,body{ min-height:100%; }
+  body{
+    margin:0;
+    font-family:var(--font-family);
+    color:var(--text-default);
+    background:var(--page-bg);
+    -webkit-font-smoothing:antialiased;
+  }
+  a{ color:var(--primary); text-decoration:none; }
+  button{ font-family:inherit; }
+  /* Inherited focus ring for everything focusable. Element rules below may
+     tighten it (the resize handle uses a negative offset); none may remove it.
+     Global because a11y that has to be requested per prototype gets dropped
+     in the small ones — see the audit behind proto-lint. */
+  :focus-visible{ outline:var(--focus-ring); outline-offset:2px; }
+
+  /* shared centred container: the nav's inner row and the page row both use
+     the same cap and the same inset, so the drawers line up exactly with the
+     nav's outermost contents. */
+  .shell{
+    max-width:var(--shell-max);
+    margin:0 auto;
+    padding:0 var(--shell-pad);
+  }
+
+  /* =====================  TOP NAV  =====================
+     The BAR (surface + bottom border) spans the full viewport; only its
+     CONTENTS are capped to the shell.
+     position:sticky, not fixed, on purpose: sticky keeps the bar in normal
+     flow so the page row's top offset is just the bar's height and no
+     body padding has to be hand-tuned to match. Older prototypes used fixed
+     and diverged by lineage, never by decision. If you switch to fixed, say
+     why under NOTES > Decisions; proto-lint warns otherwise. */
+  .topbar{
+    position:sticky; top:0; z-index:40;
+    background:var(--bg-subtle);
+    border-bottom:1px solid var(--border-subtle);
+  }
+  .topbar-inner{
+    height:var(--nav-h);
+    display:flex; align-items:center; justify-content:space-between; gap:var(--sp-md);
+  }
+  .nav-left{ display:flex; align-items:center; gap:32px; min-width:0; }
+  /* proto-lint-disable type-scale: wordmark lockup mimics the Moodle logo, not body type */
+  .brand{ display:flex; align-items:center; gap:8px; height:40px; }
+  .brand .mark{ font-size:26px; color:var(--text-default); }
+  .brand .word{ line-height:1; }
+  .brand .word b{ display:block; font-weight:800; font-size:17px; letter-spacing:.2px; }
+  .brand .word span{ display:block; font-size:11px; letter-spacing:2px; color:var(--text-subtle); }
+  /* proto-lint-enable */
+
+  /* Figma "Main Navigation": 28px tall, 4px between pills. */
+  .nav-pills{ display:flex; align-items:center; gap:var(--sp-xxs); }
+  .nav-pill{
+    display:flex; align-items:center; gap:var(--sp-xxs);
+    height:28px; padding:0 var(--sp-sm);
+    border-radius:var(--r-md); border:none; background:transparent;
+    font-size:var(--fs-sm); font-weight:500; color:var(--text-subtle); cursor:pointer;
+    white-space:nowrap;
+  }
+  .nav-pill .dot{ width:4px; height:4px; border-radius:50%; background:var(--primary); }
+  .nav-pill.selected{ background:var(--bg-strong); color:var(--text-default); }
+
+  .burger{
+    display:none;
+    width:var(--btn); height:var(--btn); border:none; background:transparent;
+    border-radius:var(--r-sm); cursor:pointer; color:var(--text-default); font-size:var(--fs-lead);
+    align-items:center; justify-content:center;
+  }
+  .burger:hover{ background:var(--bg-strong); }
+
+  .nav-right{ display:flex; align-items:center; gap:var(--sp-xs); }
+  .nav-right-group{ display:flex; align-items:center; gap:var(--sp-md); }
+
+  .search{
+    display:flex; align-items:center; gap:var(--sp-xs);
+    width:256px; height:36px; padding:0 var(--sp-sm);
+    background:var(--bg-strong); border-radius:var(--r-md);
+    color:var(--text-subtle); font-size:var(--fs-sm);
+  }
+  .search i{ font-size:12px; }
+  /* mobile-only collapsed search, a peer of the other 28x28 icon buttons
+     not a shrunken search field */
+  .search-icon-btn{
+    display:none;
+    width:28px; height:28px; border:none; background:transparent; border-radius:var(--r-sm);
+    color:var(--text-subtle); font-size:12px; cursor:pointer;
+    align-items:center; justify-content:center;
+  }
+  .search-icon-btn:hover{ background:var(--bg-strong); }
+
+  /* Figma Switch (4666:61588): track 32x18, 2px padding, 14px thumb.
+     Label is 16px regular text/default, not the 14px subtle text elsewhere. */
+  .editmode{ display:flex; align-items:center; gap:var(--sp-xs); }
+  .editmode .label{ font-size:var(--fs-md); color:var(--text-default); white-space:nowrap; }
+  .switch{
+    width:32px; height:18px; border-radius:var(--r-pill); background:var(--primary);
+    position:relative; border:none; cursor:pointer; flex:0 0 auto;
+  }
+  .switch::after{
+    content:""; position:absolute; top:2px; left:16px; width:14px; height:14px;
+    border-radius:50%; background:var(--on-primary); transition:left .15s ease;
+  }
+  .switch[aria-pressed="false"]{ background:var(--border-ring); }
+  .switch[aria-pressed="false"]::after{ left:2px; }
+
+  .icon-btn{
+    width:28px; height:28px; border:none; background:transparent; border-radius:var(--r-sm);
+    color:var(--text-subtle); font-size:12px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .icon-btn:hover{ background:var(--bg-strong); }
+  .nav-icons{ display:flex; align-items:center; gap:var(--sp-xs); }
+
+  .nav-divider{ width:1px; height:24px; background:var(--bg-strong); }
+
+  .profile{
+    display:flex; align-items:center; gap:var(--sp-xs);
+    padding:0 var(--sp-xs); border-radius:var(--r-pill); cursor:pointer;
+  }
+  .profile:hover{ background:var(--bg-strong); }
+  .avatar{
+    width:32px; height:32px; border-radius:50%; flex:0 0 auto;
+    border:1px solid var(--border-default);
+    background:var(--gradient-avatar);
+    display:flex; align-items:center; justify-content:center;
+    color:var(--on-primary); font-size:12px; font-weight:600;
+  }
+  .profile .pname{ font-size:var(--fs-sm); font-weight:500; color:var(--text-default); }
+  /* Figma Atoms/Chevron: 16px box, 8px glyph centred inside it */
+  .profile .fa-chevron-down{
+    font-size:8px; color:var(--text-subtle);
+    width:16px; height:16px; display:inline-flex; align-items:center; justify-content:center;
+  }
+
+  /* =====================  PAGE LAYOUT  =====================
+     The page row shares the nav's shell AND its inset, so the outer edges of
+     the course index and the block drawer line up with the nav's leftmost and
+     rightmost contents. */
+  .layout{
+    display:flex; align-items:flex-start;
+    max-width:var(--shell-max); margin:0 auto;
+    padding:var(--sp-lg) var(--shell-pad) 64px;
+    min-height:calc(100vh - var(--nav-h));
+    position:relative;
+  }
+
+  /* Open-toggle columns. Boost-faithful: core's toggles are position:fixed in
+     the #page gutters and cost the content column NOTHING, so here they are
+     absolutely positioned in the row's gutters (out of flow) and hidden
+     entirely when their drawer is open. */
+  .toggle-col{
+    position:absolute; left:4px; top:var(--sp-lg); bottom:0; width:var(--btn);
+    display:flex; justify-content:center;
+  }
+  body.ci-open .toggle-col{ display:none; }
+
+  .toggle-col-right{
+    position:absolute; right:4px; top:var(--sp-lg); bottom:0; width:var(--btn);
+    display:flex; justify-content:center;
+  }
+  body.cb-open .toggle-col-right{ display:none; }
+
+  .ci-toggle, .blocks-btn{
+    width:var(--btn); height:var(--btn); border:none; cursor:pointer;
+    border-radius:var(--r-sm); background:var(--bg-strong); color:var(--text-subtle);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .ci-toggle:hover, .blocks-btn:hover{ background:var(--border-default); }
+  .ci-toggle.sticky, .blocks-btn{ position:sticky; top:calc(var(--nav-h) + var(--sp-lg)); }
+  .ci-toggle.contained{ background:transparent; }
+  .ci-toggle.contained:hover{ background:var(--hover-tint-strong); }
+  .sidebar-icon{ width:20px; height:16px; display:block; }
+
+  /* ---- left course index drawer (grey card, sticky, drag-resizable) ---- */
+  .drawer{
+    flex:0 0 auto; width:0; overflow:hidden;
+    position:sticky; top:calc(var(--nav-h) + var(--sp-lg)); align-self:flex-start;
+    transition:width .32s cubic-bezier(.4,0,.2,1);
+  }
+  body.ci-open #drawer{ width:var(--ci-width); }
+  /* while dragging, kill the width transition so the edge tracks the cursor
+     1:1; the transition exists only for open/close */
+  body.dragging #drawer{ transition:none; }
+  .ci-card{
+    width:var(--ci-width); background:var(--bg-strong); border-radius:var(--r-md);
+    padding:0 var(--sp-sm) var(--sp-md);
+    max-height:calc(100vh - var(--nav-h) - 2 * var(--sp-lg)); overflow-x:hidden; overflow-y:auto;
+    transform:translateX(-100%); transition:transform .32s cubic-bezier(.4,0,.2,1);
+  }
+  body.ci-open .ci-card{ transform:translateX(0); }
+
+  .ci-header{
+    display:flex; align-items:center; justify-content:space-between;
+    height:53px; padding-left:var(--sp-md); padding-top:var(--sp-xs);
+  }
+  .ci-title{ font-size:var(--fs-md); font-weight:600; color:var(--text-default); }
+  .ci-divider{ height:1px; background:var(--border-default); }
+
+  .ci-collapseall{
+    display:flex; align-items:center; gap:var(--sp-xs);
+    padding:var(--sp-xs) var(--sp-sm); margin-top:var(--sp-xs);
+    background:none; border:none; cursor:pointer;
+    color:var(--text-muted); font-size:var(--fs-sm);
+  }
+  .ci-collapseall i{ font-size:12px; }
+
+  .ci-sec-head{
+    display:flex; align-items:center; gap:var(--sp-xs);
+    padding:var(--sp-sm); border:none; background:none; width:100%;
+    cursor:pointer; text-align:left; border-radius:var(--r-sm);
+  }
+  .ci-sec-head:hover{ background:var(--hover-tint); }
+  .ci-sec-head .chev{ width:10px; font-size:8px; color:var(--text-muted); flex:0 0 auto; text-align:center; transition:transform .15s ease; }
+  .ci-sec-head .txt{ font-size:var(--fs-sm); font-weight:500; color:var(--text-default); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ci-section.collapsed .chev{ transform:rotate(-90deg); }
+  .ci-section.collapsed .ci-activities{ display:none; }
+
+  .ci-activities{ padding-left:var(--sp-md); display:flex; flex-direction:column; gap:var(--sp-xxs); }
+  .ci-activity{
+    display:flex; align-items:center; gap:var(--sp-sm); padding:var(--sp-sm);
+    border-radius:var(--r-sm); cursor:pointer; min-width:0;
+  }
+  .ci-activity:hover{ background:var(--hover-tint); }
+  .ci-check{
+    width:16px; height:16px; border-radius:50%; flex:0 0 auto;
+    border:1px solid var(--border-ring);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .ci-check.done{ background:var(--primary); border-color:var(--primary); color:var(--on-primary); font-size:9px; }
+  .ci-acticon{ font-size:var(--fs-sm); color:var(--activity-magenta); flex:0 0 auto; }
+  .ci-activity .txt{
+    font-size:var(--fs-sm); font-weight:500; color:var(--text-subtle);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;
+  }
+  /* Moodle's .pageitem: the activity you are currently viewing */
+  .ci-activity.pageitem{ background:var(--primary); border-radius:var(--r-sm); }
+  .ci-activity.pageitem:hover{ background:var(--primary-dark); }
+  .pageitem .txt, .pageitem .ci-acticon{ color:var(--on-primary); }
+  .pageitem .ci-check{ border-color:var(--on-primary-muted); }
+  .pageitem .ci-check.done{ background:var(--on-primary); border-color:var(--on-primary); color:var(--primary); }
+
+  /* ---- resize handle ---- */
+  .resize-handle{
+    position:absolute; top:0; right:0; width:8px; height:100%;
+    cursor:col-resize; z-index:5; touch-action:none;
+  }
+  body:not(.ci-open) .resize-handle, body.ci-overlay .resize-handle{ display:none; }
+  .resize-handle::after{
+    content:""; position:absolute; top:0; bottom:0; left:3px; width:2px;
+    background:transparent; transition:background .12s ease;
+  }
+  .resize-handle:hover::after, .resize-handle.dragging::after,
+  .resize-handle:focus-visible::after{ background:var(--primary); }
+  .resize-handle:focus-visible{ outline:2px solid var(--primary); outline-offset:-1px; }
+
+  /* Touch devices: an 8px target is unusable with a finger and fails the 24px
+     minimum (WCAG 2.5.8). Widen the grab zone and show the grip permanently.
+     There is no hover on touch, so a hover-only affordance is invisible. */
+  @media (pointer: coarse){
+    .resize-handle{ width:24px; }
+    .resize-handle::after{ left:11px; background:var(--border-ring); }
+    .resize-handle.dragging::after{ background:var(--primary); }
+  }
+
+  body.dragging{ cursor:col-resize !important; -webkit-user-select:none; user-select:none; }
+  .width-readout{
+    position:absolute; bottom:12px; right:12px; font-size:11px;
+    background:var(--text-default); color:var(--on-primary); padding:2px 6px; border-radius:4px;
+    opacity:0; pointer-events:none; transition:opacity .15s ease;
+  }
+  .width-readout.show{ opacity:.92; }
+
+  /* =====================  CONTENT COLUMN  =====================
+     LIMITED WIDTH (body.limitedwidth, core's own class name) is a
+     Boost-faithful model of .main-inner: the column IS the 830px box
+     ($course-content-maxwidth applies to main-inner INCLUDING its padding),
+     centred in whatever the drawers leave behind, so visible content is
+     830 − 2×23 = 784px, exactly what core renders, and it shrinks at core's
+     rate when the index is dragged wider.
+
+     FULL WIDTH (no .limitedwidth: forum, grader report, most admin pages)
+     drops the cap and the column fills the row. It still sits INSIDE the
+     shell, so the page never runs wider than the top navigation. */
+  .content-col{
+    flex:1 1 auto; min-width:0;
+    margin:0 auto;
+    padding:0 23px;   /* core's main-inner 8px + div[role=main] 15px */
+  }
+  body.limitedwidth .content-col{ max-width:var(--content-max); }
+  .content-col > *{ width:100%; }
+
+  /* ---- placeholder: delete this and build your screen here ---- */
+  .slot-placeholder{
+    border:1.5px dashed var(--border-default); border-radius:var(--r-lg);
+    padding:48px 28px; text-align:center; color:var(--text-muted);
+    background:var(--bg-subtle);
+  }
+  .slot-placeholder h1{ margin:0 0 8px; font-size:var(--fs-lead); font-weight:700; color:var(--text-subtle); }
+  .slot-placeholder p{ margin:0 auto; max-width:52ch; font-size:var(--fs-sm); line-height:1.6; }
+  .slot-placeholder code{
+    background:var(--bg-strong); border-radius:4px; padding:1px 5px;
+    font-size:var(--fs-sm); font-family:var(--font-code); color:var(--text-default);
+  }
+
+  /* ---- right block drawer (push on desktop, no drag handle) ---- */
+  .drawer-right{
+    flex:0 0 auto; width:0; overflow:hidden;
+    position:sticky; top:calc(var(--nav-h) + var(--sp-lg)); align-self:flex-start;
+    transition:width .32s cubic-bezier(.4,0,.2,1);
+  }
+  body.cb-open .drawer-right{ width:var(--cb-width); }
+  .cb-card{
+    width:var(--cb-width); padding:0 var(--sp-sm) var(--sp-md);
+    background:var(--bg-subtle); border-radius:var(--r-md);
+    max-height:calc(100vh - var(--nav-h) - 2 * var(--sp-lg)); overflow-x:hidden; overflow-y:auto;
+    transform:translateX(100%); transition:transform .32s cubic-bezier(.4,0,.2,1);
+  }
+  body.cb-open .cb-card{ transform:translateX(0); }
+  .cb-header{ display:flex; flex-direction:column; align-items:flex-start; gap:var(--sp-sm); padding:var(--sp-xs) 0 var(--sp-sm); }
+  .cb-header .cb-close{
+    width:45px; height:45px; border:none; cursor:pointer; border-radius:var(--r-md);
+    background:var(--bg-strong); display:flex; align-items:center; justify-content:center;
+  }
+  .cb-header .cb-close:hover{ background:var(--border-default); }
+  .cb-title{ font-size:var(--fs-md); font-weight:600; color:var(--text-default); }
+  .cb-body{ display:flex; flex-direction:column; gap:var(--sp-xs); }
+  .cb-block{ background:var(--surface); border:1px solid var(--border-subtle); border-radius:var(--r-sm); padding:var(--sp-sm) 0; }
+  .cb-block-head{ display:flex; align-items:center; gap:var(--sp-xs); padding:0 var(--sp-md); }
+  .cb-block-head .grip{
+    width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    color:var(--text-muted); font-size:12px;
+  }
+  .cb-block-title{ font-size:var(--fs-md); font-weight:500; color:var(--text-subtle); }
+  .cb-block-divider{ height:1px; background:var(--border-subtle); margin:var(--sp-sm) 0; }
+  .cb-block-body{ padding:0 var(--sp-md); font-size:var(--fs-sm); }
+  .cb-block-body p{ margin:0 0 12px; color:var(--text-muted); line-height:1.5; }
+
+  /* ---- hamburger site-nav overlay ---- */
+  .sitenav{
+    position:fixed; left:0; top:var(--nav-h); height:calc(100vh - var(--nav-h));
+    width:var(--sitenav-width); max-width:85vw; background:var(--surface); z-index:47;
+    border-right:1px solid var(--border-default); box-shadow:var(--shadow-drawer);
+    transform:translateX(-105%); transition:transform .3s cubic-bezier(.4,0,.2,1);
+    padding:var(--sp-sm); overflow-y:auto;
+  }
+  body.nav-open .sitenav{ transform:translateX(0); }
+  .sitenav-item{
+    display:flex; align-items:center; gap:12px; width:100%;
+    padding:12px 14px; border:none; background:none; cursor:pointer; text-align:left;
+    border-radius:var(--r-md); font-size:var(--fs-md); font-weight:500; color:var(--text-subtle);
+  }
+  .sitenav-item i{ width:18px; text-align:center; color:var(--text-muted); }
+  .sitenav-item:hover{ background:var(--bg-subtle); }
+  .sitenav-item.active{ background:var(--bg-strong); color:var(--text-default); }
+
+  /* backdrop for any overlay */
+  .backdrop{ display:none; position:fixed; inset:0; background:var(--overlay); z-index:46; }
+  body.nav-open .backdrop,
+  body.ci-overlay.ci-open .backdrop,
+  body.cb-overlay.cb-open .backdrop{ display:block; }
+
+  /* =====================  DEV AIDS  =====================
+     Everything below is prototype scaffolding. Strip it before anyone screen-
+     records the prototype for a wider audience, or leave it. The panel
+     minimises to a "State" pill so it never blocks the screen it describes.
+     Fixed ids, so every prototype's scaffolding is the same scaffolding:
+       #devPanel  #devMin  #guidesBtn  #annotBtn  #measureBar  #debug */
+  /* proto-lint-disable hex: dev scaffolding, never part of the design under review */
+  .debug{
+    position:fixed; bottom:16px; right:14px; z-index:60; cursor:pointer;
+    background:rgba(29,33,37,.92); color:#fff; font-size:11px; line-height:1.6;
+    padding:8px 10px; border-radius:8px; font-variant-numeric:tabular-nums;
+  }
+  .debug b{ color:#8fd0ff; }
+  body.hide-dev .debug{ display:none; }
+
+  .devpanel{
+    position:fixed; bottom:16px; z-index:60; width:186px;
+    /* bottom-left, aligned with the course index's left edge; 100% not 100vw
+       so the centring ignores the scrollbar */
+    left:max(12px, calc((100% - var(--shell-max)) / 2));
+    background:#fff; border:1px solid var(--border-default); border-radius:var(--r-md);
+    box-shadow:0 8px 28px rgba(0,0,0,.16); padding:var(--sp-sm);
+  }
+  .devpanel h5{
+    margin:0 0 6px; font-size:.625rem; text-transform:uppercase;
+    letter-spacing:.5px; color:var(--text-muted); padding-right:26px;
+  }
+  .devpanel h5 + .devrow{ margin-bottom:10px; }
+  .devrow{ display:flex; flex-wrap:wrap; gap:4px; }
+  .devbtn{
+    border:1px solid var(--border-default); background:var(--bg-subtle);
+    border-radius:var(--r-sm); padding:4px 8px; cursor:pointer;
+    font-size:.6875rem; color:var(--text-subtle); font-weight:500;
+  }
+  .devbtn:hover{ background:var(--bg-strong); }
+  .devbtn.on{ background:var(--primary); color:#fff; border-color:transparent; }
+  .devmin{
+    position:absolute; top:6px; right:6px; width:22px; height:22px;
+    border:1px solid var(--border-default); background:var(--bg-subtle);
+    border-radius:var(--r-sm); cursor:pointer; color:var(--text-subtle);
+    display:flex; align-items:center; justify-content:center; gap:6px; font-size:10px;
+  }
+  .devmin:hover{ background:var(--bg-strong); color:var(--text-default); }
+  .devpanel.min{ width:auto; padding:4px; }
+  .devpanel.min > *:not(.devmin){ display:none; }
+  .devpanel.min .devmin{
+    position:static; width:auto; height:26px; padding:0 var(--sp-xs);
+    border-color:transparent; background:var(--primary); color:#fff;
+    font-size:.6875rem; font-weight:500;
+  }
+  .devpanel.min .devmin:hover{ background:var(--primary-dark); color:#fff; }
+  body.hide-dev .devpanel{ display:none; }
+
+  /* =====  ALIGNMENT GUIDES + MEASUREMENT READOUT  =====
+     Shared vocabulary across every prototype in this folder:
+       nav contents    = where the logo/avatar sit (inside the nav's padding)
+       cap             = the shell bound the nav is capped to
+       page furniture  = outermost extent of drawers + content
+       reading column  = the actual content box (main-inner minus its gutters) */
+  .guide{
+    position:fixed; top:0; bottom:0; width:0; z-index:59;
+    pointer-events:none; display:none; border-left:1px dashed;
+  }
+  body.guides-on .guide{ display:block; }
+  .guide::after{
+    content:attr(data-label);
+    position:absolute; left:3px; font-size:10px; color:#fff;
+    padding:1px 5px; border-radius:3px; white-space:nowrap;
+  }
+  .g-nav{ border-color:var(--g-nav); border-left-style:solid; }
+  .g-shell{ border-color:var(--g-shell); }
+  .g-extent{ border-color:var(--g-extent); }
+  .g-col{ border-color:var(--g-col); }
+  .g-nav::after{ background:var(--g-nav); bottom:178px; }
+  .g-shell::after{ background:var(--g-shell); bottom:156px; }
+  .g-extent::after{ background:var(--g-extent); bottom:134px; }
+  .g-col::after{ background:var(--g-col); bottom:112px; }
+
+  .measure-bar{
+    position:fixed; left:0; right:0; bottom:0; z-index:100; display:none;
+    background:#1d2125; color:#adb5bd; padding:9px 16px; font-size:12px;
+    flex-wrap:wrap; gap:6px 18px; align-items:center;
+    font-variant-numeric:tabular-nums; box-shadow:0 -2px 12px rgba(0,0,0,.25);
+  }
+  body.guides-on .measure-bar{ display:flex; }
+  body.hide-dev .measure-bar{ display:none; }
+  .measure-bar b{ color:#fff; font-weight:600; }
+  .measure-bar .swatch{ display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:5px; vertical-align:middle; }
+  .measure-bar .ok{ color:#51cf66; font-weight:700; }
+  .measure-bar .near{ color:#ffd43b; font-weight:700; }
+  .measure-bar .bad{ color:#ff8787; font-weight:700; }
+  body.guides-on .devpanel, body.guides-on .debug{ bottom:66px; }
+  /* proto-lint-enable */
+
+  /* =====================  ANNOTATIONS  =====================
+     Reviewer-facing callouts that explain an affordance the screen doesn't
+     explain itself ("drag this edge", "this is the current activity"). Off on
+     load; toggled by #annotBtn or by `body.annot-on`. To annotate an element,
+     give it data-annot="the callout text" and (optionally) data-annot-side
+     = "left|right|top|bottom". The layer positions itself from the element's
+     live geometry, so it survives resize and drawer animation.
+     Every prototype used to re-invent this (.anno-layer, .prov, .anno-card…),
+     each slightly differently. Now it ships. Uses design tokens, not the dev
+     palette, because reviewers actually see it. */
+  .annot-layer{ position:fixed; inset:0; z-index:70; pointer-events:none; display:none; }
+  body.annot-on .annot-layer{ display:block; }
+  .annot-ring{
+    position:fixed; border:2px dashed var(--primary); border-radius:var(--r-md);
+    box-shadow:0 0 0 3px var(--hover-tint); pointer-events:none;
+  }
+  .annot-card{
+    position:fixed; max-width:240px; background:var(--primary); color:var(--on-primary);
+    border-radius:var(--r-md); padding:8px 10px 9px; font-size:12px; line-height:1.45;
+    pointer-events:auto; box-shadow:var(--shadow-drawer);
+  }
+  .annot-card b{ display:block; font-size:12px; margin-bottom:2px; }
+  .annot-card .annot-x{
+    position:absolute; top:4px; right:6px; border:none; background:none;
+    color:var(--on-primary-muted); cursor:pointer; font-size:14px; line-height:1;
+  }
+  .annot-card .annot-x:hover{ color:var(--on-primary); }
+
+  /* =====================  RESPONSIVE  =====================
+     Figma header states:
+       Desktop      >1024   full nav (>=1440 the inner row caps and centres)
+       Tablet       <=1024  BURGER replaces logo + nav, 20px inset, 256 search
+       Small tablet  <=991  search narrows to 184
+       Mobile       <=767   16px inset, search collapses to a 28px icon,
+                            "Edit mode" label drops, profile drops the name
+
+     NOTE FOR ENG: 1024 is NOT a Bootstrap/Boost breakpoint (576/768/992/1200/
+     1400), so it needs a bespoke media query, not a media-breakpoint-down()
+     mixin.
+
+     Independent of the header, the drawers switch from push to overlay below
+     Boost's `lg` (991.98px), where CORE already switches. So 992-1024 is
+     burger nav WITH push drawers. That gap is deliberate: keeping core's
+     threshold means a prototype about chrome does not smuggle in a tablet
+     behaviour change. */
+  @media (max-width:1024px){
+    .burger{ display:flex; }
+    .nav-left .brand, .nav-left .nav-pills{ display:none; }
+  }
+
+  @media (max-width:991px){
+    .search{ width:184px; }
+  }
+
+  /* The WHOLE drawer (position:fixed) slides off-screen when closed, not just
+     the inner card, otherwise the closed drawer's fixed box stays over the
+     content and intercepts taps on the toggle buttons. */
+  @media (max-width:991.98px){
+    /* scope left rules to #drawer: the right drawer is NOT .drawer here, but
+       keep the habit: in the fuller prototypes it is, and `.drawer` would
+       capture both (this bit us: right overlay rendered on the left). */
+    body.ci-overlay #drawer{
+      position:fixed; left:0; top:var(--nav-h); height:calc(100vh - var(--nav-h));
+      width:auto !important; z-index:47; padding:16px; margin:0;
+      transform:translateX(-110%); transition:transform .3s cubic-bezier(.4,0,.2,1);
+    }
+    body.ci-overlay.ci-open #drawer{ transform:translateX(0); }
+    body.ci-overlay .ci-card{
+      width:300px; max-width:85vw; height:100%; max-height:none; overflow-y:auto;
+      transform:none;
+    }
+    body.ci-overlay .toggle-col{ position:static; width:var(--btn); margin-right:12px; display:flex; justify-content:center; }
+
+    body.cb-overlay .drawer-right{
+      position:fixed; right:0; top:var(--nav-h); height:calc(100vh - var(--nav-h));
+      width:auto !important; z-index:47; padding:16px; margin:0;
+      transform:translateX(110%); transition:transform .3s cubic-bezier(.4,0,.2,1);
+    }
+    body.cb-overlay.cb-open .drawer-right{ transform:translateX(0); }
+    body.cb-overlay .cb-card{
+      width:300px; max-width:85vw; height:100%; max-height:none; overflow-y:auto;
+      transform:none;
+    }
+    body.cb-overlay .toggle-col-right{ position:static; width:var(--btn); margin-left:12px; display:flex; justify-content:center; }
+  }
+
+  @media (max-width:767px){
+    :root{ --shell-pad:16px; }
+    .search{ display:none; }
+    .search-icon-btn{ display:flex; }
+    .editmode .label{ display:none; }
+    .profile .pname{ display:none; }
+    .profile{ gap:var(--sp-xxs); padding:0 var(--sp-xxs); }
+    .nav-right-group{ gap:var(--sp-sm); }
+    .content-col{ padding:0 16px; }
+  }
+</style>
+<script>
+  /* Restore the saved course-index width BEFORE first paint so the drawer
+     renders at the right size with no flash. This mimics production, where the
+     server reads get_user_preferences('drawer-index-width') and emits it as an
+     inline custom property in the initial HTML. localStorage is only the
+     client stand-in here. */
+  (function(){
+    try {
+      var MINW = 285, MAXW = 640;
+      var saved = parseInt(localStorage.getItem("ci-width"), 10);
+      if (!isNaN(saved)) {
+        document.documentElement.style.setProperty(
+          "--ci-width", Math.max(MINW, Math.min(MAXW, saved)) + "px");
+      }
+    } catch(e){}
+  })();
+</script>
+</head>
+<body class="limitedwidth ci-open">
+
+  <!-- ===== TOP NAV ===== -->
+  <header class="topbar">
+    <div class="topbar-inner shell">
+      <div class="nav-left">
+        <button class="burger" id="burger" aria-label="Open site navigation"><i class="fa-solid fa-bars"></i></button>
+        <div class="brand">
+          <span class="mark"><i class="fa-solid fa-leaf"></i></span>
+          <span class="word"><b>Fleetwood</b><span>UNIVERSITY</span></span>
+        </div>
+        <nav class="nav-pills">
+          <button class="nav-pill selected"><span class="dot"></span>Dashboard</button>
+          <button class="nav-pill">Site Administration</button>
+        </nav>
+      </div>
+      <div class="nav-right">
+        <div class="nav-right-group">
+          <div class="search"><i class="fa-solid fa-magnifying-glass"></i><span>Search…</span></div>
+          <button class="search-icon-btn" aria-label="Search"><i class="fa-solid fa-magnifying-glass"></i></button>
+          <div class="editmode">
+            <span class="label">Edit mode</span>
+            <button class="switch" id="editSwitch" aria-pressed="false" aria-label="Edit mode"></button>
+          </div>
+          <div class="nav-icons">
+            <button class="icon-btn" aria-label="Notifications"><i class="fa-regular fa-bell"></i></button>
+            <button class="icon-btn" aria-label="Messages"><i class="fa-regular fa-comment"></i></button>
+          </div>
+        </div>
+        <div class="nav-divider"></div>
+        <div class="profile">
+          <span class="avatar">S</span>
+          <span class="pname">Sarah</span>
+          <i class="fa-solid fa-chevron-down"></i>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== PAGE ===== -->
+  <div class="layout">
+
+    <!-- left toggle column (shown when the index is closed) -->
+    <div class="toggle-col">
+      <button class="ci-toggle sticky" id="openBtn"
+        data-toggler="drawers" data-action="toggle" data-target="theme_boost-drawers-courseindex"
+        title="Open course index" aria-label="Open course index">
+        <svg class="sidebar-icon" viewBox="0 0 20 16" xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M14.2296 0C16.8642 0.000258968 19 2.13126 19 4.76041V11.2396C18.9997 13.8685 16.864 15.9997 14.2296 16H5.77137C3.1367 16 1.00026 13.8687 1 11.2396V4.76041C1 2.1311 3.13654 0 5.77137 0H14.2296ZM7.67243 14.3311H14.2296C15.9405 14.3308 17.3283 12.9469 17.3285 11.2396V4.76041C17.3285 3.05287 15.9407 1.66822 14.2296 1.66796H7.67243V14.3311ZM5.77137 1.66796C4.06009 1.66796 2.67243 3.05271 2.67243 4.76041V11.2396C2.67269 12.9471 4.06025 14.3311 5.77137 14.3311H6V1.66796H5.77137Z" fill="#495057"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- course index drawer -->
+    <div class="drawer" id="drawer">
+      <div class="ci-card">
+        <div class="ci-header">
+          <span class="ci-title">Course Index</span>
+          <button class="ci-toggle contained" id="closeBtn"
+            data-toggler="drawers" data-action="toggle" data-target="theme_boost-drawers-courseindex"
+            title="Close course index" aria-label="Close course index">
+            <svg class="sidebar-icon" viewBox="0 0 20 16" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M14.2296 0C16.8642 0.000258968 19 2.13126 19 4.76041V11.2396C18.9997 13.8685 16.864 15.9997 14.2296 16H5.77137C3.1367 16 1.00026 13.8687 1 11.2396V4.76041C1 2.1311 3.13654 0 5.77137 0H14.2296ZM7.67243 14.3311H14.2296C15.9405 14.3308 17.3283 12.9469 17.3285 11.2396V4.76041C17.3285 3.05287 15.9407 1.66822 14.2296 1.66796H7.67243V14.3311ZM5.77137 1.66796C4.06009 1.66796 2.67243 3.05271 2.67243 4.76041V11.2396C2.67269 12.9471 4.06025 14.3311 5.77137 14.3311H6V1.66796H5.77137Z" fill="#495057"/>
+            </svg>
+          </button>
+        </div>
+        <div class="ci-divider"></div>
+        <button class="ci-collapseall" id="collapseAll"><i class="fa-solid fa-down-left-and-up-right-to-center"></i>Collapse all</button>
+        <div id="sections"></div>
+      </div>
+      <!-- Drag handle. Three things are required TOGETHER for this to work on
+           iPad, and each alone is a silent failure: Pointer Events (not mouse
+           events — iOS never fires mousemove during a touch drag), touch-action:
+           none on the handle (or Safari claims the gesture for scrolling), and a
+           >=24px grab zone under @media (pointer:coarse) (WCAG 2.5.8; there is
+           no hover on touch, so a hover-only affordance is invisible). All three
+           are already wired below and in the CSS — keep them together. -->
+      <div class="resize-handle" id="resizeHandle" tabindex="0" role="separator"
+           aria-orientation="vertical" aria-label="Resize course index (arrow keys)"
+           aria-valuemin="285" aria-valuemax="640" aria-valuenow="285"
+           data-annot="Drag this edge to widen the course index and read the full activity names. Tab to it and use the arrow keys if you'd rather not drag."
+           data-annot-side="right"></div>
+      <div class="width-readout" id="widthReadout">285px</div>
+    </div>
+
+    <!-- ============================================================
+         MAIN CONTENT: this is the slot. Everything above and below
+         is shell; build your prototype inside #prototype-content.
+         ============================================================ -->
+    <main class="content-col">
+      <div id="prototype-content">
+
+        <div class="slot-placeholder" data-annot="This is the only region a prototype replaces. Everything around it is the shell: same nav, same drawers, same widths, every time." data-annot-side="top">
+          <h1>Content slot</h1>
+          <p>
+            Build the screen you are prototyping inside <code>#prototype-content</code>.
+            Use the State panel (bottom left) to check it in both width modes and with
+            each drawer open. The reading column is 784px wide in limited width with
+            the index open, which is what core actually renders.
+          </p>
+        </div>
+
+        <!-- AWKWARD DATA — use at least two of these in your prototype's content.
+             Tidy invented data hides exactly the problems a prototype exists to
+             surface: truncation, wrapping, zero states, big numbers. proto-lint
+             fails a prototype whose longest content string is under 60 chars.
+             Delete this comment once you've used them; the constants below are
+             mirrored in the PROTOTYPE DATA block in the script. -->
+
+      </div>
+    </main>
+
+    <!-- right block drawer -->
+    <div class="drawer-right" id="drawerRight">
+      <div class="cb-card">
+        <div class="cb-header">
+          <button class="cb-close" id="closeRightBtn" title="Close course blocks" aria-label="Close course blocks">
+            <svg class="sidebar-icon" viewBox="0 0 20 16" xmlns="http://www.w3.org/2000/svg" style="transform:scaleX(-1)">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M14.2296 0C16.8642 0.000258968 19 2.13126 19 4.76041V11.2396C18.9997 13.8685 16.864 15.9997 14.2296 16H5.77137C3.1367 16 1.00026 13.8687 1 11.2396V4.76041C1 2.1311 3.13654 0 5.77137 0H14.2296ZM7.67243 14.3311H14.2296C15.9405 14.3308 17.3283 12.9469 17.3285 11.2396V4.76041C17.3285 3.05287 15.9407 1.66822 14.2296 1.66796H7.67243V14.3311ZM5.77137 1.66796C4.06009 1.66796 2.67243 3.05271 2.67243 4.76041V11.2396C2.67269 12.9471 4.06025 14.3311 5.77137 14.3311H6V1.66796H5.77137Z" fill="#495057"/>
+            </svg>
+          </button>
+          <span class="cb-title">Course Blocks</span>
+        </div>
+        <div class="cb-body">
+          <div class="cb-block">
+            <div class="cb-block-head">
+              <span class="grip"><i class="fa-solid fa-grip-vertical"></i></span>
+              <span class="cb-block-title">Announcements</span>
+            </div>
+            <div class="cb-block-divider"></div>
+            <div class="cb-block-body">
+              <p>Placeholder block. Swap in whatever block your screen needs, or leave it.
+                 The drawer only exists here to prove the layout maths.</p>
+            </div>
+          </div>
+          <div class="cb-block">
+            <div class="cb-block-head">
+              <span class="grip"><i class="fa-solid fa-grip-vertical"></i></span>
+              <span class="cb-block-title">Calendar</span>
+            </div>
+            <div class="cb-block-divider"></div>
+            <div class="cb-block-body">
+              <p>Placeholder block.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- right toggle column (shown when the block drawer is closed) -->
+    <div class="toggle-col-right">
+      <button class="blocks-btn" id="openRightBtn" title="Open course blocks" aria-label="Open course blocks">
+        <svg class="sidebar-icon" viewBox="0 0 20 16" xmlns="http://www.w3.org/2000/svg" style="transform:scaleX(-1)">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M14.2296 0C16.8642 0.000258968 19 2.13126 19 4.76041V11.2396C18.9997 13.8685 16.864 15.9997 14.2296 16H5.77137C3.1367 16 1.00026 13.8687 1 11.2396V4.76041C1 2.1311 3.13654 0 5.77137 0H14.2296ZM7.67243 14.3311H14.2296C15.9405 14.3308 17.3283 12.9469 17.3285 11.2396V4.76041C17.3285 3.05287 15.9407 1.66822 14.2296 1.66796H7.67243V14.3311ZM5.77137 1.66796C4.06009 1.66796 2.67243 3.05271 2.67243 4.76041V11.2396C2.67269 12.9471 4.06025 14.3311 5.77137 14.3311H6V1.66796H5.77137Z" fill="#495057"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- hamburger site-navigation overlay -->
+  <nav class="sitenav" id="sitenav" aria-label="Site navigation">
+    <button class="sitenav-item active"><i class="fa-solid fa-house"></i> Home</button>
+    <button class="sitenav-item"><i class="fa-solid fa-gauge"></i> Dashboard</button>
+    <button class="sitenav-item"><i class="fa-solid fa-graduation-cap"></i> My courses</button>
+    <button class="sitenav-item"><i class="fa-solid fa-gear"></i> Site administration</button>
+  </nav>
+
+  <div class="backdrop" id="backdrop"></div>
+
+  <!-- ===== DEV STATE SWITCHER (prototype only) =====
+       Ships minimised by default (class="min" below) — a reviewer opening this
+       cold should see the screen, not a control panel. Expand it yourself while
+       actively co-reviewing; don't ship it expanded as the landing state. -->
+  <div class="devpanel min" id="devPanel">
+    <button class="devmin" id="devMin" aria-expanded="false" title="Restore the state switcher">
+      <i class="fa-solid fa-flask" id="devMinIcon"></i><span id="devMinLabel">State</span>
+    </button>
+    <h5>Page width</h5>
+    <div class="devrow" id="widthSwitch">
+      <button class="devbtn on" data-width="limited">Limited</button>
+      <button class="devbtn" data-width="full">Full</button>
+    </div>
+    <h5>Nav cap</h5>
+    <div class="devrow" id="capSwitch">
+      <button class="devbtn on" data-cap="1440px">1440 (design)</button>
+      <button class="devbtn" data-cap="1320px">1320 (current)</button>
+    </div>
+    <h5>Review aids</h5>
+    <div class="devrow">
+      <button class="devbtn" id="guidesBtn">Guides</button>
+      <button class="devbtn" id="annotBtn">Annotations</button>
+    </div>
+  </div>
+
+  <!-- annotations layer: callouts are built from data-annot attributes by JS -->
+  <div class="annot-layer" id="annotLayer" aria-live="polite"></div>
+
+  <!-- alignment guides -->
+  <div class="guide g-nav"    id="gNavL"    data-label="nav contents"></div>
+  <div class="guide g-nav"    id="gNavR"    data-label="nav contents"></div>
+  <div class="guide g-shell"  id="gShellL"  data-label="cap"></div>
+  <div class="guide g-shell"  id="gShellR"  data-label="cap"></div>
+  <div class="guide g-extent" id="gExtentL" data-label="page furniture"></div>
+  <div class="guide g-extent" id="gExtentR" data-label="page furniture"></div>
+  <div class="guide g-col"    id="gColL"    data-label="reading column"></div>
+  <div class="guide g-col"    id="gColR"    data-label="reading column"></div>
+  <div class="measure-bar" id="measureBar"></div>
+  <div class="debug" id="debug" title="Click to hide dev overlays"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* PROTOTYPE DATA */
+  /* ============================================================
+     AWKWARD DATA: the cases tidy sample data hides. Use at least two in
+     #prototype-content. proto-lint checks the longest content string is
+     >= 60 chars and that a >= 4-digit number appears somewhere.
+     ============================================================ */
+  var AWKWARD = {
+    longName:  "Formative Assessment: Photosynthesis and Cellular Respiration Quiz (Attempt 2 of 3)", // 83 chars
+    longPerson:"Dr Wilhelmina Featherstonehaugh-Cholmondeley-Marjoribanks (she/her)",              // 70 chars
+    zeroCount: 0,          // the empty state nobody designs for
+    bigCount:  12483,      // a 5-digit count: does the column/badge survive it?
+    threeLine: "Week 7 fieldwork report: local ecosystem biodiversity survey, transect method, submission with photographic evidence and raw CSV data attached"
+  };
+
+  /* ============================================================
+     COURSE INDEX DATA: replace with your own course.
+     Long names are deliberate: truncation at 285px is the thing the
+     drag-resize exists to solve, so keep at least a few of them.
+     ============================================================ */
+  var SECTIONS = [
+    { title:"Introduction", items:[
+      { t:"Course Syllabus & Reading List: Week 1 Orientation Pack", icon:"fa-file-lines", done:true },
+      { t:"Introductions & Ice Breaker Discussion Forum Activity", icon:"fa-comments", done:true },
+      { t:"How this course is assessed", icon:"fa-file-lines", current:true }
+    ]},
+    { title:"Ecosystem vulnerability", collapsed:true, items:[
+      { t:"Formative Assessment: Photosynthesis and Cellular Respiration Quiz (Attempt 2 of 3)", icon:"fa-list-check" },
+      { t:"Lecture Recording: Introduction to Organelles and Their Functions", icon:"fa-video" }
+    ]},
+    { title:"Impact on biodiversity", items:[
+      { t:"Fieldwork Report Template: Local Ecosystem Biodiversity Survey Submission", icon:"fa-pen-to-square" },
+      { t:"Sample Text: Membrane Transport Mechanisms and Osmoregulation Reading", icon:"fa-book" },
+      { t:"Great Barrier Reef Conservation Case Study", icon:"fa-link" }
+    ]}
+  ];
+
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
+    return ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"})[c]; }); }
+
+  function renderSections(){
+    document.getElementById("sections").innerHTML = SECTIONS.map(function(sec){
+      var items = sec.items.map(function(it){
+        return '<div class="ci-activity' + (it.current ? ' pageitem' : '') + '">'
+          + '<span class="ci-check' + (it.done ? ' done' : '') + '">'
+            + (it.done ? '<i class="fa-solid fa-check"></i>' : '') + '</span>'
+          + '<i class="fa-solid ' + (it.icon || 'fa-file-lines') + ' ci-acticon"></i>'
+          + '<span class="txt">' + esc(it.t) + '</span>'
+          + '</div>';
+      }).join("");
+      return '<div class="ci-section' + (sec.collapsed ? ' collapsed' : '') + '">'
+        + '<button class="ci-sec-head"><span class="chev"><i class="fa-solid fa-chevron-down"></i></span>'
+        + '<span class="txt">' + esc(sec.title) + '</span></button>'
+        + '<div class="ci-activities">' + items + '</div>'
+        + '</div>';
+    }).join("");
+
+    document.querySelectorAll(".ci-sec-head").forEach(function(head){
+      head.addEventListener("click", function(){ head.parentNode.classList.toggle("collapsed"); });
+    });
+    /* click an activity to make it the current page item (.pageitem) */
+    document.getElementById("sections").addEventListener("click", function(e){
+      var row = e.target.closest(".ci-activity"); if(!row) return;
+      document.querySelectorAll("#sections .pageitem").forEach(function(el){ el.classList.remove("pageitem"); });
+      row.classList.add("pageitem");
+    });
+  }
+  renderSections();
+
+  document.getElementById("collapseAll").addEventListener("click", function(){
+    var anyOpen = !!document.querySelector(".ci-section:not(.collapsed)");
+    document.querySelectorAll(".ci-section").forEach(function(s){ s.classList.toggle("collapsed", anyOpen); });
+  });
+
+  /* ---- element refs (debugEl first: updateDebug runs inside applyMode) ---- */
+  var body = document.body;
+  var debugEl = document.getElementById("debug");
+  var backdrop = document.getElementById("backdrop");
+
+  /* ---- drawer open/close ---- */
+  function setLeft(open){
+    body.classList.toggle("ci-open", open);
+    if(open && body.classList.contains("cb-overlay")) body.classList.remove("cb-open"); // one overlay at a time
+    updateDebug();
+  }
+  function setRight(open){
+    body.classList.toggle("cb-open", open);
+    if(open && body.classList.contains("ci-overlay")) body.classList.remove("ci-open");
+    updateDebug();
+  }
+  document.getElementById("openBtn").addEventListener("click", function(){ setLeft(true); });
+  document.getElementById("closeBtn").addEventListener("click", function(){ setLeft(false); });
+  document.getElementById("openRightBtn").addEventListener("click", function(){ setRight(true); });
+  document.getElementById("closeRightBtn").addEventListener("click", function(){ setRight(false); });
+
+  /* ---- hamburger site-nav ---- */
+  function setNav(open){ body.classList.toggle("nav-open", open); }
+  document.getElementById("burger").addEventListener("click", function(){ setNav(true); });
+
+  function closeOverlays(){
+    setNav(false);
+    if(body.classList.contains("ci-overlay")) body.classList.remove("ci-open");
+    if(body.classList.contains("cb-overlay")) body.classList.remove("cb-open");
+    updateDebug();
+  }
+  backdrop.addEventListener("click", closeOverlays);
+  document.addEventListener("keydown", function(e){ if(e.key === "Escape") closeOverlays(); });
+
+  /* ---- overlay vs push at Boost's lg (991.98px, matching core) ----
+     The nav burger is a separate, design-specified threshold at 1024px. */
+  var mq = window.matchMedia("(max-width:991.98px)");
+  var lastOverlay = null;
+  function applyMode(){
+    var overlay = mq.matches;
+    if(overlay === lastOverlay) return;   // only act on a real mode CHANGE, so a
+    lastOverlay = overlay;                // window drag doesn't keep resetting the drawers
+    body.classList.toggle("ci-overlay", overlay);
+    body.classList.toggle("cb-overlay", overlay);
+    if(overlay){
+      body.classList.remove("ci-open");
+      body.classList.remove("cb-open");
+    } else {
+      body.classList.add("ci-open");
+      body.classList.remove("nav-open");
+    }
+    updateDebug();
+  }
+  /* Belt and braces: matchMedia's change event is not always delivered when a
+     viewport is overridden by devtools or an embedded preview, and a prototype
+     that silently keeps desktop behaviour at 400px wastes a review. The resize
+     listener re-checks; applyMode is a no-op unless the mode actually flipped. */
+  mq.addEventListener("change", applyMode);
+  window.addEventListener("resize", applyMode);
+  applyMode();
+
+  /* ---- edit-mode toggle (cosmetic here; wire body.edit-on if you need it) ---- */
+  var editSwitch = document.getElementById("editSwitch");
+  editSwitch.addEventListener("click", function(){
+    var on = editSwitch.getAttribute("aria-pressed") === "true";
+    editSwitch.setAttribute("aria-pressed", on ? "false" : "true");
+    body.classList.toggle("edit-on", !on);
+  });
+
+  /* ---- drag to resize the course index (push mode only) ----
+     Pointer Events, not mouse events. iOS/iPadOS Safari does not fire
+     mousemove during a touch drag. It only synthesises a mousedown/mouseup/
+     click burst AFTER a tap completes, so a mouse-only handler can never
+     track a finger. Three things are required together and all three are easy
+     to miss: pointer events; touch-action:none on the handle (or Safari claims
+     the gesture for panning); and a >=24px grab zone on coarse pointers. */
+  var handle = document.getElementById("resizeHandle");
+  var readout = document.getElementById("widthReadout");
+  var MIN = 285, MAX = 640;
+  var dragging = false, startX = 0, startWidth = 0, moved = false, lastTapTime = 0;
+
+  function curWidth(){
+    return parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ci-width"));
+  }
+  function setWidth(px){
+    px = Math.max(MIN, Math.min(MAX, px));
+    document.documentElement.style.setProperty("--ci-width", px + "px");
+    readout.textContent = Math.round(px) + "px";
+    handle.setAttribute("aria-valuenow", Math.round(px));
+    updateDebug();
+  }
+  /* Stand-in for production's setUserPreference('drawer-index-width', px).
+     Called on resize END only, never per pointermove. */
+  function persistWidth(){
+    try { localStorage.setItem("ci-width", Math.round(curWidth())); } catch(e){}
+  }
+  (function syncWidthUI(){
+    var w = Math.round(curWidth());
+    readout.textContent = w + "px";
+    handle.setAttribute("aria-valuenow", w);
+  })();
+
+  handle.addEventListener("keydown", function(e){
+    if(body.classList.contains("ci-overlay")) return;
+    var step = e.shiftKey ? 48 : 24, handled = true, cur = curWidth();
+    if(e.key === "ArrowRight") setWidth(cur + step);
+    else if(e.key === "ArrowLeft") setWidth(cur - step);
+    else if(e.key === "Home") setWidth(MIN);
+    else if(e.key === "End") setWidth(MAX);
+    else handled = false;
+    if(handled){
+      e.preventDefault(); persistWidth(); readout.classList.add("show");
+      clearTimeout(handle._t);
+      handle._t = setTimeout(function(){ readout.classList.remove("show"); }, 700);
+    }
+  });
+  handle.addEventListener("pointerdown", function(e){
+    if(body.classList.contains("ci-overlay")) return;
+    dragging = true; moved = false; startX = e.clientX; startWidth = curWidth();
+    handle.classList.add("dragging"); body.classList.add("dragging"); readout.classList.add("show");
+    try { handle.setPointerCapture(e.pointerId); } catch(err){}
+    e.preventDefault();
+  });
+  handle.addEventListener("pointermove", function(e){
+    if(!dragging) return;
+    if(Math.abs(e.clientX - startX) > 2) moved = true;
+    setWidth(startWidth + (e.clientX - startX));
+  });
+  function endDrag(e){
+    if(!dragging) return;
+    dragging = false; handle.classList.remove("dragging"); body.classList.remove("dragging");
+    try { handle.releasePointerCapture(e.pointerId); } catch(err){}
+    persistWidth();
+    setTimeout(function(){ readout.classList.remove("show"); }, 400);
+    /* Double-tap to reset. iOS reserves double-tap for zoom and won't reliably
+       deliver dblclick on a drag handle. Only counts if the pointer never
+       moved, so two quick drags don't reset the width. */
+    if(!moved && e.pointerType !== "mouse"){
+      if(e.timeStamp - lastTapTime < 350){ setWidth(MIN); persistWidth(); lastTapTime = 0; }
+      else lastTapTime = e.timeStamp;
+    }
+  }
+  handle.addEventListener("pointerup", endDrag);
+  handle.addEventListener("pointercancel", endDrag);
+  handle.addEventListener("dblclick", function(){ setWidth(MIN); persistWidth(); });
+
+  /* ---- debug readout ---- */
+  function updateDebug(){
+    var mode = body.classList.contains("ci-overlay") ? "overlay" : "push";
+    debugEl.innerHTML =
+      "viewport: <b>" + window.innerWidth + "px</b> · drawers: <b>" + mode + "</b><br>" +
+      "width: <b>" + (body.classList.contains("limitedwidth") ? "limited" : "full") + "</b>" +
+      " · index: <b>" + (body.classList.contains("ci-open") ? "open" : "closed") + "</b>" +
+      " (" + Math.round(curWidth()) + "px)" +
+      " · blocks: <b>" + (body.classList.contains("cb-open") ? "open" : "closed") + "</b>";
+    refreshGuides();
+    scheduleGuides();
+  }
+  window.addEventListener("resize", updateDebug);
+
+  /* ---- alignment guides + measurement readout ---- */
+  var measureBar = document.getElementById("measureBar");
+  var G = {
+    navL:document.getElementById("gNavL"),       navR:document.getElementById("gNavR"),
+    shellL:document.getElementById("gShellL"),   shellR:document.getElementById("gShellR"),
+    extentL:document.getElementById("gExtentL"), extentR:document.getElementById("gExtentR"),
+    colL:document.getElementById("gColL"),       colR:document.getElementById("gColR")
+  };
+  /* content box = border box minus padding (what the eye reads as the edge) */
+  function contentBox(el){
+    var r = el.getBoundingClientRect(), cs = getComputedStyle(el);
+    return { left:r.left + parseFloat(cs.paddingLeft), right:r.right - parseFloat(cs.paddingRight) };
+  }
+  /* outermost extent of the page furniture: the content column plus whichever
+     drawers are actually open */
+  function pageExtent(){
+    var col = contentBox(document.querySelector(".content-col"));
+    var l = col.left, r = col.right;
+    [[document.getElementById("drawer"), "ci-open"],
+     [document.getElementById("drawerRight"), "cb-open"]].forEach(function(pair){
+      if(!body.classList.contains(pair[1])) return;
+      var b = pair[0].getBoundingClientRect();
+      if(b.width < 1) return;
+      l = Math.min(l, b.left); r = Math.max(r, b.right);
+    });
+    return { left:l, right:r };
+  }
+  function place(g, x){ g.style.left = Math.round(x) + "px"; }
+  function cls(d){ var a = Math.abs(d); return a <= 1 ? "ok" : (a <= 8 ? "near" : "bad"); }
+
+  function refreshGuides(){
+    if(!measureBar || !body.classList.contains("guides-on")) return;
+    var nav   = contentBox(document.querySelector(".topbar-inner"));
+    var col   = contentBox(document.querySelector(".content-col"));
+    var ext   = pageExtent();
+    /* the shell bound is the page row's CONTENT box, the cap less its inset,
+       so it coincides exactly with the nav's content bound */
+    var shell = contentBox(document.querySelector(".layout"));
+
+    place(G.navL, nav.left);       place(G.navR, nav.right);
+    place(G.shellL, shell.left);   place(G.shellR, shell.right);
+    place(G.extentL, ext.left);    place(G.extentR, ext.right);
+    place(G.colL, col.left);       place(G.colR, col.right);
+
+    var fL = Math.round(ext.left - shell.left);
+    var fR = Math.round(shell.right - ext.right);
+    var worst = Math.max(Math.abs(fL), Math.abs(fR));
+    var verdict = worst <= 1 ? '<span class="ok">flush with the cap</span>'
+                : worst <= 8 ? '<span class="near">within ' + worst + 'px</span>'
+                : (fL < 0 || fR < 0)
+                  ? '<span class="bad">outside the cap by ' + Math.max(-fL, -fR) + 'px</span>'
+                  : '<span class="bad">inside the cap by ' + worst + 'px</span>';
+
+    var colW = Math.round(col.right - col.left);
+    var cap  = Math.round(parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--shell-max")));
+    var limited = body.classList.contains("limitedwidth");
+
+    measureBar.innerHTML =
+      '<span>Viewport <b>' + Math.round(window.innerWidth) + 'px</b> · cap <b>' + cap + 'px</b></span>' +
+      '<span><i class="swatch" style="background:var(--g-nav)"></i>Nav contents <b>' +
+        Math.round(nav.left) + ' &rarr; ' + Math.round(nav.right) + '</b></span>' +
+      '<span><i class="swatch" style="background:var(--g-extent)"></i>Page furniture <b>' +
+        Math.round(ext.left) + ' &rarr; ' + Math.round(ext.right) + '</b> &nbsp;' + verdict + '</span>' +
+      '<span><i class="swatch" style="background:var(--g-col)"></i>Reading column <b>' + colW + 'px</b>' +
+        (limited ? ' &nbsp;<span class="' + cls(colW - 784) + '">' +
+          (colW >= 784 ? '+' : '') + (colW - 784) + ' vs core 784</span>' : '') + '</span>' +
+      (window.innerWidth < cap + 40 ? '<span class="near">Widen past ' + cap + 'px. The cap only bites above it.</span>' : '');
+  }
+  /* Drawer widths animate over ~320ms. Measure immediately, on transitionend,
+     AND on a timer as a backstop for environments that drop transition frames. */
+  var guideTimer;
+  function scheduleGuides(){ clearTimeout(guideTimer); guideTimer = setTimeout(refreshGuides, 400); }
+  document.getElementById("drawer").addEventListener("transitionend", refreshGuides);
+  document.getElementById("drawerRight").addEventListener("transitionend", refreshGuides);
+
+  document.getElementById("guidesBtn").addEventListener("click", function(){
+    var on = body.classList.toggle("guides-on");
+    this.classList.toggle("on", on);
+    refreshGuides();
+  });
+
+  /* ---- annotations: callouts built from data-annot attributes ----
+     Positions track the target's live rect on every frame while on, so they
+     follow drawer animation and resize. Each card has its own dismiss; the
+     Annotations button re-shows all. Off on load — set in DEFAULTS if a
+     reviewer should land with them showing. */
+  var annotLayer = document.getElementById("annotLayer");
+  var annotBtn = document.getElementById("annotBtn");
+  var annots = [];
+  function buildAnnots(){
+    annotLayer.innerHTML = ""; annots = [];
+    document.querySelectorAll("[data-annot]").forEach(function(el, i){
+      var ring = document.createElement("div"); ring.className = "annot-ring";
+      var card = document.createElement("div"); card.className = "annot-card";
+      card.innerHTML = "<b>" + (i + 1) + "</b>" + el.getAttribute("data-annot") +
+        '<button class="annot-x" aria-label="Dismiss this annotation">&times;</button>';
+      card.querySelector(".annot-x").addEventListener("click", function(){ ring.style.display = card.style.display = "none"; });
+      annotLayer.appendChild(ring); annotLayer.appendChild(card);
+      annots.push({ el: el, ring: ring, card: card, side: el.getAttribute("data-annot-side") || "right" });
+    });
+  }
+  function placeAnnots(){
+    var vw = window.innerWidth, vh = window.innerHeight;
+    annots.forEach(function(a){
+      if(a.ring.style.display === "none") return;
+      var r = a.el.getBoundingClientRect();
+      if(r.width < 1 || r.bottom < 0 || r.top > vh){ a.ring.style.visibility = a.card.style.visibility = "hidden"; return; }
+      a.ring.style.visibility = a.card.style.visibility = "";
+      a.ring.style.left = (r.left - 4) + "px"; a.ring.style.top = (r.top - 4) + "px";
+      a.ring.style.width = (r.width + 8) + "px"; a.ring.style.height = (r.height + 8) + "px";
+      var cw = a.card.offsetWidth, ch = a.card.offsetHeight, cl, ct;
+      if(a.side === "left"){ cl = r.left - cw - 12; ct = r.top; }
+      else if(a.side === "top"){ cl = r.left; ct = r.top - ch - 12; }
+      else if(a.side === "bottom"){ cl = r.left; ct = r.bottom + 12; }
+      else { cl = r.right + 12; ct = r.top; }
+      cl = Math.max(8, Math.min(cl, vw - cw - 8)); ct = Math.max(8, Math.min(ct, vh - ch - 8));
+      a.card.style.left = cl + "px"; a.card.style.top = ct + "px";
+    });
+  }
+  var annotRAF = null;
+  function annotTick(){ placeAnnots(); annotRAF = requestAnimationFrame(annotTick); }
+  function setAnnots(on){
+    body.classList.toggle("annot-on", on); annotBtn.classList.toggle("on", on);
+    if(on){ buildAnnots(); if(!annotRAF) annotTick(); }
+    else if(annotRAF){ cancelAnimationFrame(annotRAF); annotRAF = null; }
+  }
+  annotBtn.addEventListener("click", function(){ setAnnots(!body.classList.contains("annot-on")); });
+
+  /* ---- page width switcher: limited (830px cap) vs full ----
+     Note what does NOT change: the nav cap. A full-width page must not widen
+     the top navigation. Screens get brought in line with the cap one at a
+     time, and the chrome has to stay put while that happens. */
+  var widthSwitch = document.getElementById("widthSwitch");
+  widthSwitch.addEventListener("click", function(e){
+    var btn = e.target.closest(".devbtn"); if(!btn) return;
+    widthSwitch.querySelectorAll(".devbtn").forEach(function(b){ b.classList.toggle("on", b === btn); });
+    body.classList.toggle("limitedwidth", btn.dataset.width === "limited");
+    updateDebug();
+  });
+
+  /* ---- nav cap switcher: 1440 (design) vs 1320 (current container) ----
+     The shell token drives BOTH the nav contents and the page row, so flipping
+     it shows the whole composition at each cap. */
+  var capSwitch = document.getElementById("capSwitch");
+  capSwitch.addEventListener("click", function(e){
+    var btn = e.target.closest(".devbtn"); if(!btn) return;
+    capSwitch.querySelectorAll(".devbtn").forEach(function(b){ b.classList.toggle("on", b === btn); });
+    document.documentElement.style.setProperty("--shell-max", btn.dataset.cap);
+    updateDebug();
+  });
+
+  /* ---- minimise/restore the state switcher ---- */
+  (function(){
+    var panel = document.getElementById("devPanel");
+    var btn = document.getElementById("devMin");
+    btn.addEventListener("click", function(){
+      var min = panel.classList.toggle("min");
+      btn.setAttribute("aria-expanded", String(!min));
+      btn.title = min ? "Restore the state switcher" : "Minimise the state switcher";
+      document.getElementById("devMinIcon").className = min ? "fa-solid fa-flask" : "fa-solid fa-minus";
+      document.getElementById("devMinLabel").textContent = min ? "State" : "";
+    });
+  })();
+
+  debugEl.addEventListener("click", function(){ body.classList.add("hide-dev"); });
+
+  /* ============================================================
+     DEFAULTS: set the state a reviewer should land on.
+     Uncomment / edit as needed. Reviewers should not have to click
+     anything to see the thing you want them to look at. The panel
+     itself already ships minimised (see the markup above) — only
+     uncomment devMin.click() below if you want it to START EXPANDED
+     instead, which is the exception, not the norm.
+     ============================================================ */
+  // body.classList.remove("limitedwidth");            // open on a full-width page
+  // setRight(true);                                   // open the block drawer
+  // document.getElementById("guidesBtn").click();     // open with guides on
+  // document.getElementById("devMin").click();        // start EXPANDED instead of the default minimised
+  // setAnnots(true);                                  // land with annotations showing (Step 6 asks which)
+
+  updateDebug();
+})();
+</script>
+
+<!-- NOTES
+     The one block a prototype author owns. Six fixed fields, filled in before
+     sharing; proto-lint fails a file whose Question or Answer is still a
+     placeholder. Keep it short (lint warns past 120 lines) — this block is
+     for THIS prototype's decisions, not a copy of the shell's.
+
+Question:  <one sentence a reviewer can answer yes or no. If you can't write it, you're not ready to build>
+Answer:    <fill in after review>
+Fidelity:  rough
+Figma nodes: none (Boost-loose)
+Decisions:
+  - <what you chose and why, one line each; "topbar fixed" needs a reason here>
+Traps:
+  - <anything that cost time and would cost the next person time>
+-->
+
+<!-- SHELL-NOTES (inherited, do not edit here — change the template instead)
+
+Decisions already baked into this shell (do not re-litigate per prototype):
+- Nav cap 1440px is a real max-width: the bar surface spans the viewport, the
+  inner row caps and centres, so contents always span 1400px.
+- The page row shares the nav's cap AND inset, so the course index and the
+  block drawer line up with the nav's outermost contents.
+- The nav cap does not change with the page's width mode.
+- Limited width = 830px ($course-content-maxwidth), giving a 784px reading
+  column, which is Boost's real number, adopted over the Figma 873px.
+- Drawers push at >=992px and overlay with a backdrop below 991.98px, which is
+  Boost's `lg` and core's existing threshold. Deliberately unchanged.
+- Nav collapses to a burger at <=1024px, which is NOT a Bootstrap breakpoint, so it
+  needs a bespoke media query. 992-1024 is burger nav with push drawers.
+- Left index drag-resizes 285-640px; the right block drawer is fixed at 315px
+  with no handle.
+- Resize uses Pointer Events + touch-action:none + a 24px coarse-pointer grab
+  zone. All three are required for iPad; each one alone is a silent failure.
+- Top nav is position:sticky, not fixed (see the comment on .topbar).
+- Every colour a rule needs is a :root token; the only literals are inside the
+  proto-lint-disable fence around the dev scaffolding.
+- Every :root value is a Moodle Design System token under a short name (the
+  $mds-* source is in the comment beside it). Noto Sans is the only typeface.
+  Four values that used to be near-misses were corrected to the MDS value
+  (primary-dark, ci-row-hover, activity-magenta, activity-teal); if something
+  looks a shade different from an older prototype, that's why.
+- The State panel ships minimised; annotations ship off. DEFAULTS decides the
+  landing state, markup does not.
+
+Traps this shell already avoids (they cost real time to find):
+- html,body{height:100%} makes anything taller than one screen silently
+  unscrollable. It's min-height now. It was fixed downstream twice (course-
+  builder, workshop) before anyone fixed it here.
+- Scope left-drawer rules to #drawer. In the fuller prototypes the right drawer
+  also carries .drawer, so `body.ci-open .drawer` captures both and the right
+  overlay renders on the left.
+- On mobile, slide the WHOLE fixed drawer off-screen when closed, not just the
+  inner card, otherwise the closed drawer's box sits over the content and eats
+  taps on the toggle buttons.
+- Assign debugEl before applyMode() runs. updateDebug() is called from inside
+  it, and a hoisting slip there throws and aborts the whole IIFE, so no resize
+  listeners ever attach.
+- Kill the drawer's width transition while dragging (body.dragging), or the
+  edge lags the cursor and the interaction reads as broken.
+- Don't re-invent annotations. The layer ships; add data-annot to an element.
+
+Where to get more (DIALECT WARNING: the files below predate this shell and use
+--mds-* colour tokens, not --sp-*/--text-*. Translate when lifting a widget,
+or proto-lint fails token-dialect on the mix):
+- Edit-mode row controls, add/more menus, drag-to-reorder:
+  PROTOTYPE-courseindex-drawer-resize.html
+- Form fields, settings tabs, state selector patterns:
+  PROTOTYPE-course-settings.html
+- A full-width page with a real horizontal-scroll problem:
+  PROTOTYPE-grading.html
+- Process, prompting patterns, and the Figma/design-system workflow:
+  PROTOTYPING-PROCESS.md / the moodle-prototype SKILL.md
+
+Dependencies: Google Fonts (Noto Sans, the MDS base face) + Font Awesome 6 via CDN:
+needs network on first open; degrades to system font + glyph boxes offline.
+Lint: node scripts/proto-lint.js <this file> — 0 FAIL before sharing.
+-->
+</body>
+</html>

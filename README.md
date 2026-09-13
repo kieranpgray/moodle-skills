@@ -50,13 +50,21 @@ Takes a product idea, customer problem, or business opportunity and develops it 
 
 ---
 
+### Moodle Prototype (`moodle-prototype`)
+
+Builds a throwaway HTML prototype of a Moodle course-page screen — reads the real codebase before designing anything, starts from a bundled template shell, and corrects the result against a running local Moodle (with a Docker fast-path so a second server usually isn't needed). Includes an optional design-QA pass before the correction step. Written for product and design staff with no git or terminal background, as well as engineers. Also callable via `/moodle-prototype`.
+
+Ships a bundled HTML template and a JS measurement script alongside `SKILL.md` — see "Using these skills" below, copying the folder means copying all of it, not just the one file.
+
+---
+
 ## Using these skills
 
 1. Clone or download this repo
 2. Copy the skill folder(s) you want into the `skills/` directory of your Cowork workspace
 3. Claude will pick them up automatically in your next session
 
-Each skill folder contains a single `SKILL.md` file. Some skills also include a `context/` directory — this is created at runtime and holds local state generated during use (triage logs, indexes, pending review queues). The `context/` directory is gitignored; it will be created automatically the first time the skill runs.
+Most skill folders contain a single `SKILL.md` file. Some also include a `context/` directory — created at runtime, gitignored, holding local state generated during use (triage logs, indexes, pending review queues) — or, like `moodle-prototype`, checked-in asset files (templates, scripts) that the skill's own instructions reference by relative path. Copy the whole folder in either case, not just `SKILL.md`.
 
 ---
 
