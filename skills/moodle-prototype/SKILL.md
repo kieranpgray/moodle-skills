@@ -7,7 +7,8 @@ description: >
   if they don't say "prototype". Trigger phrases include "let's prototype the
   course index", "build me a prototype of the gradebook", "I want to mock up
   how X could look", "can we sketch this in code before Figma", "spin up a
-  prototype of X so I can look at it". Also triggered by /moodle-prototype.
+  prototype of X so I can look at it". Also triggered by /moodle-prototype, and
+  by /moodle-prototype check (or "is my setup ready?") to test the setup only.
 ---
 
 # moodle-prototype
@@ -34,6 +35,14 @@ because it feels obvious.
 Read the request and pick a branch. This changes which steps below get skipped, so don't guess —
 if it's genuinely unclear which applies, ask.
 
+- **Setup check only** (`/moodle-prototype check`, "is my setup ready", "can I use this here",
+  or any first contact from someone who sounds unsure the skill will work on their machine) —
+  run `bash <this skill's folder>/scripts/check-setup.sh` from the project directory and
+  translate its output into two or three plain sentences: what's ready, what's limited and what
+  that costs them, and the one thing to fix if anything says STOP (the script prints the fix
+  under each STOP; repeat it, don't improvise a different one). Then stop. Don't start a
+  prototype from a setup check, and don't skip the script and eyeball the environment instead —
+  the script is the same answer every time, a look around isn't.
 - **Bare ask** ("let's prototype the gradebook", "mock up how the course index could look") — no
   stated question, no requirements, no mention of stakeholders or a real decision riding on it.
   Default to the **shortcut path**: Step 0, Step 1 (good-enough tier), then Step 2. Don't reach
@@ -63,6 +72,13 @@ comes back too thin — don't restart, just deepen the step that's weak.
 
 Not part of the repeating cycle below; do this once per workspace, not per prototype.
 
+0. Run `bash <this skill's folder>/scripts/check-setup.sh` first and read it before doing
+   anything by hand. It answers the three questions the rest of this step depends on — is the
+   skill folder complete, is Node there for the lint, is this a Moodle checkout — plus the
+   optional ones (Docker, a static server). If it prints STOP, relay the fix it gives and wait;
+   there's no point copying a template into a folder that isn't Moodle. If it prints LIMIT, say
+   what the limit costs in one sentence (e.g. "no running Moodle, so Step 5's comparison gets
+   skipped") and carry on. Non-technical users get this output translated, not pasted.
 1. Confirm this is a Moodle checkout, on a working copy (a git worktree) that won't affect anyone
    else's work. Explain what a worktree is in plain language if the user seems unfamiliar — "a
    second folder pointing at the same repository, so nothing here can break real work."
