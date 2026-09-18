@@ -1,6 +1,6 @@
 # Design pass
 
-An optional polish stage that runs after a first version of the prototype exists (either from
+A QA stage that runs after a first version of the prototype exists (either from
 step 2's shortcut or step 3+4's considered path) and before step 5's correction against real
 Moodle. It catches internal hierarchy, spacing and contrast problems cheaply, before step 5's
 side-by-side screenshot diffing gets distracted by them.
@@ -58,19 +58,23 @@ never declared (a silent fallback to nothing).
 
 ## When to run what
 
-The pass is split into **conformance** (always) and **polish** (only when the brief says
-stakeholders are reviewing). The reason is NN/g's aesthetic-usability effect: a polished prototype
-makes reviewers comment on the visuals instead of the problem it was built to expose, and hi-fi
-reads as "done". Conformance makes the prototype more on-system without making it prettier;
-polish makes it prettier. Record which ran in the NOTES `Fidelity:` field (`rough` = conformance
-only, `considered` = polish too) so a reviewer knows what they're looking at.
+The pass is split into **conformance** (always) and **legibility** (only when a decision rides on
+the review). Nothing on either tier is polish. NN/g's aesthetic-usability effect is the reason:
+a polished prototype makes reviewers comment on the visuals instead of the problem it was built
+to expose, and hi-fi reads as "done". Conformance makes the prototype more on-system without
+making it prettier. Legibility (clutter, empty states) removes what a reviewer would otherwise
+have to look past; it doesn't add anything cosmetic. Shadows are excluded from both tiers because
+the shell's `--shadow-*` tokens are MDS values and Rule 0 decides them. Record which tier ran in
+the NOTES `Fidelity:` field (`rough` = conformance only, `considered` = legibility too). The
+trigger is the kind of review: a critique session stays `rough`, a go/no-go on a direction gets
+`considered`.
 
 | Phase | Tier | Checks | What you're actually doing |
 |---|---|---|---|
 | **Before any markup** | conformance | 01 visual hierarchy, 10 group related elements, 05 button hierarchy | One line per screen: what is primary, secondary, tertiary; which elements form groups; which single action is the primary button. Written down before CSS exists, this is cheap; after, it's a rewrite. |
 | **While building** | conformance | 04 spacing, 02 typography, 03 palette | Pull from the token set above. Keep within-group gaps smaller than between-group gaps. Reach for weight and colour before size. |
 | **After it renders** | conformance | 09 contrast, plus `ui-audit.js`'s `scroll.trapped` | Measure, don't squint — see the audit loop below. `scroll.trapped: true` means content below the fold is unreachable; fix it before anything else. |
-| **After it renders** | polish | 06 clutter, 08 shadows, 07 empty states | Ask first. 07 is the one worth arguing for even on a rough build: prototypes are built on happy-path data and the zero state is exactly what stakeholders ask about — which is why the template's `AWKWARD` constants include a zero count. |
+| **After it renders** | legibility | 06 clutter, 07 empty states | Ask first. 07 is the one worth arguing for even on a rough build: prototypes are built on happy-path data and the zero state is exactly what stakeholders ask about — which is why the template's `AWKWARD` constants include a zero count. 08 shadows is deliberately absent: use the `--shadow-*` tokens and report any disagreement as a Rule 0 finding. |
 
 **Don't run the full pass on every variant** if step 2's "build fast, fix later" produced more
 than one rough attempt. A quick prototype's job is to show something fast, not be polished; run

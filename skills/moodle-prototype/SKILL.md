@@ -297,8 +297,13 @@ build — and before Step 5. It is split in two, and the split is the point:
   scoped to `#prototype-content` plus `proto-lint` — not four separate skill invocations.** The
   census is what catches an off-scale gap or a 4.07:1 chip; the named refactoring-ui checks
   (02/03/04/09) are for the considered path, where the extra turns are already budgeted.
-- **Polish, only when the brief says stakeholders are reviewing.** Clutter, shadows, empty-state
-  treatment (06/07/08). Ask before running these. Set `Fidelity: considered` if they ran.
+- **Legibility, only when a decision rides on the review.** Clutter (06) and empty states (07).
+  Neither is polish: clutter removal makes the hierarchy readable, and a missing zero state is a
+  hole, not restraint. A reviewer who can't read the hierarchy judges the noise instead of the
+  design. Ask before running these. Set `Fidelity: considered` if they ran. The trigger is the
+  kind of review, not who's in it: a critique session stays `rough`; a go/no-go on a direction
+  gets `considered`. Shadows (08) are not on either tier — the shell's `--shadow-*` tokens are
+  MDS values and Rule 0 applies; report a shadow problem as a design-system finding.
 
 Why the split: NN/g's aesthetic-usability finding is that a polished prototype makes reviewers
 comment on the visuals instead of the problem it was built to expose, and hi-fi reads as "done".
