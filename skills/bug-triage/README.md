@@ -39,7 +39,7 @@ Human reviews and confirms. Note posted to Jira.
 | Skill | Step | What it does |
 |-------|------|--------------|
 | `bug-triage-quality-check` | 1 | Checks ticket completeness against Moodle tracker standards |
-| `triage-find-regression` | 2 | Queries GitHub commits for regression candidates |
+| `triage-find-regression` | 2 | Identifies regression candidates via GitHub MCP or local git |
 | `bug-triage-validation` | 3 | Cross-references reported behaviour against Moodle docs |
 | `bug-triage-test-coverage` | 4 | Checks test coverage in the affected code area |
 | `bug-triage-assignment` | 5 | Determines outcome and produces the final triage note |
@@ -135,6 +135,18 @@ ORDER BY created ASC
 ```
 
 Extend the window to `-14d` for catch-up runs after a gap.
+
+---
+
+## Tool requirements
+
+Step 2 (`triage-find-regression`) supports two execution paths and self-selects at runtime:
+
+**Path A — GitHub MCP (preferred).** Uses `mcp__github__list_commits` and `mcp__github__get_commit` to query `github.com/moodle/moodle` directly. No local Moodle clone required. Works in any Claude Code session with the GitHub MCP plugin active.
+
+**Path B — Local git (fallback).** Requires a checked-out Moodle repository with `git` available. Jake Dallimore's original execution model. Supports `git bisect` with automated test execution — a capability not available in Path A.
+
+All other steps require only the sooperset Atlassian MCP (`mcp__mcp-atlassian-sooperset__*`) and `web_fetch` for Step 3 documentation lookups.
 
 ---
 

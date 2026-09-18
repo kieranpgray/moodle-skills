@@ -59,11 +59,16 @@ what it finds rather than assume.)
 Say what you want to look at: "let's prototype the forum discussion list so it's easier to
 scan". The skill will:
 
-1. Check your setup and copy its template into `public/prototypes/` in your Moodle folder.
-2. Read the real Moodle code for that feature and tell you what it found.
-3. Build the prototype and run the quality check on it.
-4. Ask one question: should the reviewer annotations show on load, or on click?
-5. Hand you the file path. Double-click it, or drag it into a browser.
+1. Say in one line what it takes the question to be (what this prototype exists to find out) and
+   let you correct it. That question stays in the chat; it never goes into the file.
+2. Check your setup and copy its template into `public/prototypes/` in your Moodle folder.
+3. Read the real Moodle code for that feature and tell you what it found.
+4. Build the prototype and run the quality check on it.
+5. Ask who will open the file: internal reviewers, usability-test participants, or both.
+   Reviewers get the file with its State panel and annotations (and it asks whether those show on
+   load or on click). Participants get a separate clean copy with all of that removed and a
+   neutral title, so nothing in the file says what you're studying.
+6. Hand you the file path(s). Double-click, or drag into a browser.
 
 If the request is richer (a decision riding on it, stakeholders reviewing, a fidelity rule) it
 takes a longer path with a plan and Figma grounding first. It tells you which path it's on.
@@ -93,6 +98,7 @@ where.
 | `design-pass.md` | The design QA pass: what gets checked, and the rule that the Moodle Design System beats generic advice |
 | `templates/course-page/TEMPLATE-shell.html` | The starting point for every prototype: top nav, course index, block drawer, state switcher, annotations, all on MDS tokens and Noto Sans |
 | `scripts/proto-lint.js` | The quality gate (Node, no dependencies) |
+| `scripts/proto-export.js` | Makes the usability-test copy: strips the State panel, annotations, guides and every comment, swaps in a neutral title |
 | `scripts/ui-audit.js` | A measurement script Claude pastes into the browser to check type, spacing and contrast on the rendered page |
 | `scripts/check-setup.sh` | The readiness check |
 

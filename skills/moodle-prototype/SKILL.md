@@ -60,6 +60,21 @@ if it's genuinely unclear which applies, ask.
   or keep iterating on it here if the idea is still forming. None of the remaining steps in this
   file apply until a direction is chosen and something exists to correct against.
 
+**The question comes first, and it lives in the conversation.** Before reading any code, state
+in one line what this prototype exists to find out. Exploratory is fine, and on the shortcut path
+it's the norm: "how might we use the forum capability we already have, but present it in a way
+that feels modern and more intuitive?" is a complete question. Don't force it into a yes/no; that
+picks the design before the prototype has had a chance to. On a bare ask, propose the question
+yourself from what was said ("I'll take the question as: how might the discussion list read at a
+glance for a teacher with 40 active threads. Correct me if that's off") and carry on; don't block
+on it. On a rich brief, it's already there. The checkable part lives one level down, in Step 3's
+must-demonstrate list, and only the considered path needs it. Hold the question for the whole
+session: it decides what Step 2 shows, what Step 4.5 checks, and what the ticket says. **It never
+goes into the file.** A prototype may be opened by a usability-test participant, View Source is
+one keystroke, and a comment saying what you're studying is a leaked study. The file carries
+build decisions only (see "What a prototype file looks like"); the question and what the review
+concluded stay in chat and go into the ticket.
+
 Two tiers run through every step that follows: **good enough** (short, the default, produces
 useful work fast) and **the full version** (costs more, use it when the prototype is going in
 front of stakeholders for a real decision, the feature is one you don't understand yet, or you've
@@ -83,10 +98,10 @@ Not part of the repeating cycle below; do this once per workspace, not per proto
    else's work. Explain what a worktree is in plain language if the user seems unfamiliar — "a
    second folder pointing at the same repository, so nothing here can break real work."
 2. Create `public/prototypes/` if it doesn't exist.
-3. **Copy the bundled template and the lint into place.** This skill ships its own copies at
-   `templates/course-page/TEMPLATE-shell.html` and `scripts/proto-lint.js`. If
-   `public/prototypes/TEMPLATE-shell.html` doesn't exist in this checkout, copy the bundled one
-   in; copy `proto-lint.js` beside it. If a file already exists there, diff it against the
+3. **Copy the bundled template, the lint and the export into place.** This skill ships its own
+   copies at `templates/course-page/TEMPLATE-shell.html`, `scripts/proto-lint.js` and
+   `scripts/proto-export.js`. If `public/prototypes/TEMPLATE-shell.html` doesn't exist in this
+   checkout, copy the bundled one in; copy both scripts beside it. If a file already exists there, diff it against the
    bundled copy and ask before overwriting — don't silently clobber someone's in-progress edits
    to their own shell. The lint runs with `node public/prototypes/proto-lint.js <file>` and is
    the gate at Step 6; the template itself passes it with 0 FAIL, so any failure on a prototype
@@ -194,11 +209,16 @@ instead of Step 2, not after it, when the answer needs to hold up under real scr
 anything ambiguous rather than guessing.
 
 **Full version:** Before writing any code, establish and write down:
-- **What this needs to teach us** — stated plainly enough that a reviewer knows exactly what
-  they're being asked to weigh in on.
-- **Must demonstrate** — a numbered list of checkable behaviours, each with the number that makes
-  it checkable. "The toggle should not jump" is arguable; "at 1400px and above the toggle keeps a
-  constant gap from the content edge" is testable by measuring, not by looking.
+- **What this needs to teach us** — the question from mode detection, stated plainly enough
+  that a reviewer knows exactly what they're being asked to weigh in on. It stays open ("how
+  might we…", "which of these…", "does this feel…"); the numbers go in the next field, not here.
+- **Must demonstrate** — a numbered list of checkable behaviours, each one a piece of evidence
+  toward answering the question, each with the number that makes it checkable. "The toggle
+  should not jump" is arguable; "at 1400px and above the toggle keeps a constant gap from the
+  content edge" is testable by measuring, not by looking. For the forum question above: "a
+  discussion with 1,247 replies and 38 unread reads at a glance", "a 70-character author name
+  truncates without wrapping the row". The review answers the question in prose; this list says
+  whether the build earned that answer.
 - **Data** — the source, and the hard cases specifically. Minimum, inside `#prototype-content`:
   one string of 60+ characters, one zero/empty state, one count of 1,000+ (the template's
   `AWKWARD` constants). Tidy invented data hides the exact problem the prototype exists to surface.
@@ -362,11 +382,21 @@ conventions) and it's why nothing was ever consistent. Carry these forward into 
   inside the cap."
 - **Two NOTES blocks at the bottom, and they are not the same thing.** `SHELL-NOTES` is inherited
   from the template — the shell's decisions and traps — and is never edited in a prototype; if it
-  needs changing, change the template. `NOTES` is the prototype's own, with six fixed fields:
-  `Question:`, `Answer:`, `Fidelity:`, `Figma nodes:`, `Decisions:`, `Traps:`. Exactly one
-  `Answer:` in the whole file. Keep it short; the lint warns past 120 lines. This is what stops a
-  NOTES block growing to 900 lines by inheriting the previous prototype's (it happened), and stops
-  a file carrying two contradictory Answers (that happened too).
+  needs changing, change the template. `NOTES` is the prototype's own, with four fixed fields:
+  `Fidelity:`, `Figma nodes:`, `Decisions:`, `Traps:`. Build decisions for whoever picks the file
+  up next, nothing else. Keep it short; the lint warns past 120 lines, which is what stops a NOTES
+  block growing to 900 lines by inheriting the previous prototype's (it happened). **No research
+  intent anywhere in the file**: not the question, not what was concluded, not who it was tested
+  with. The lint fails any file carrying a `Question:` or `Answer:` line. Those live in the
+  conversation and the ticket.
+- **Two audiences, two files.** The reviewer file is the one you build: State panel,
+  annotations, guides, NOTES. A usability-test participant gets a separate `-test.html` that
+  `scripts/proto-export.js` produces from it, with every dev region cut (the template marks them
+  `dev:start`/`dev:end` in CSS, markup and JS), every `data-annot` stripped, every comment
+  removed, the content slot renamed, and the `<title>` swapped for the `<meta name="clean-title">`
+  the file declares. The export refuses to run if that meta is missing or still says
+  "prototype". Anything you add to the file that is scaffolding rather than screen goes inside a
+  dev region, or it ships to participants.
 - **MDS inherited, not bolted on.** `:root` is an alias layer over the Moodle Design System:
   short names (`--sp-md`, `--text-muted`, `--fs-sm`, `--danger`) each carrying the `$mds-*` name
   they stand for. `--font-family` is Noto Sans and the body uses it; `--font-code` is the MDS
@@ -382,42 +412,54 @@ conventions) and it's why nothing was ever consistent. Carry these forward into 
 
 ## Step 6 — set the landing state, then share it
 
-A reviewer shouldn't have to click anything to see the thing being decided, and getting the file
-to them shouldn't need explaining either.
+Nobody should have to click anything to see the thing being decided, and getting the file to
+them shouldn't need explaining either.
 
-Three things happen here in both tiers, and the third is a gate, not a suggestion:
+Four things happen here in both tiers, and the last is a gate, not a suggestion:
 
-1. **Ask the annotations question**: show on load, or hidden until the reviewer clicks
-   Annotations? Set DEFAULTS accordingly (`setAnnots(true)` for on-load). If you can't ask —
-   no user in the loop — default to hidden-until-clicked and say so in the report; on-load is
-   the right answer when the reviewer is a stakeholder seeing it cold, hidden when it's someone
-   who'll drive it themselves.
-2. **Fill in `Answer:` in NOTES** with what was concluded — a real sentence, forty characters or
-   more, not a placeholder. Across the existing prototypes this was filled in 0 times out of 13.
-   The method says the answer is the only thing worth keeping; a prototype without one is a file
-   nobody will be able to interpret in a month. If the review hasn't concluded yet, write what's
-   known so far and say so — that is still not a placeholder.
-3. **Run the lint and get 0 FAIL** — `node public/prototypes/proto-lint.js <file>`. Do not
-   report the file path until it passes. If a FAIL is genuinely wrong for this prototype, fence it
-   with a `proto-lint-disable <check>: <reason>` comment that says why; a fence without a reason is
-   ignored.
+1. **Ask who opens the file.** Internal reviewers, usability-test participants, or both. This is
+   the one question that changes what gets shipped: reviewers get the file as built (State panel,
+   annotations, guides); participants get a clean export that reveals nothing about what's being
+   studied. If you can't ask, ship the reviewer file only and say so; never guess "participants"
+   and never send a participant the reviewer file.
+2. **For reviewers, ask the annotations question**: show on load, or hidden until they click
+   Annotations? Set DEFAULTS accordingly (`setAnnots(true)` for on-load, inside the dev block).
+   If you can't ask, default to hidden-until-clicked and say so; on-load is right when the
+   reviewer is a stakeholder seeing it cold, hidden when it's someone who'll drive it themselves.
+3. **For participants, make the clean copy.** Confirm the `<meta name="clean-title">` reads like
+   a real Moodle page (it ships as "Course: Biology 101"; change it to match the prototype), then
+   `node public/prototypes/proto-export.js <file>`. It writes `<file>-test.html` and says what it
+   cut. Open the export and confirm the core interactions still work and the console is clean;
+   the dev code is removed, not hidden, so a stray reference to a dev element is the thing to
+   look for.
+4. **Run the lint and get 0 FAIL** on every file you're about to hand over —
+   `node public/prototypes/proto-lint.js <file>` for the reviewer file, and again on the
+   `-test.html` if there is one (the lint recognises the suffix and checks that nothing dev-shaped
+   survived). Do not report a path until its file passes. If a FAIL is genuinely wrong for this
+   prototype, fence it with a `proto-lint-disable <check>: <reason>` comment that says why; a
+   fence without a reason is ignored.
 
-**Good enough:** Do the three above, set the prototype to open on the state that matters, minimise
-the State panel, report the file path with the lint summary line.
+**Good enough:** Do the four above, set the prototype to open on the state that matters, minimise
+the State panel, report the file path(s) with the lint summary line for each, and restate the
+question this prototype was built to answer so it's in the same message as the path. On the
+considered path, also say which must-demonstrate items held and which didn't; that's the
+evidence the review weighs.
 
-**Full version:** Same, plus confirm the prototype works when opened directly from the file
-system rather than through whatever local server was used to build it, and check `SHELL-NOTES` is
-still byte-identical to the template's (the lint warns if not).
+**Full version:** Same, plus confirm each file works when opened directly from the file system
+rather than through whatever local server was used to build it, and check `SHELL-NOTES` is still
+byte-identical to the template's (the lint warns if not).
 
-The landing state is whatever the reviewer should be looking at the moment the file opens, no
+The landing state is whatever the person should be looking at the moment the file opens, no
 clicking required — mobile width with the drawer open, edit mode on, a specific tab active. Pick
-the one thing they should see first.
+the one thing they should see first. For a participant build, that's the state the task starts
+from, and nothing else.
 
 Sharing is simpler than it sounds: the output is always an HTML file, and sharing it means
-sending that file the way any other attachment gets sent — Slack, email, wherever. Whoever gets
-it double-clicks it and it opens; no hosting, no link required. A shared prototype hosting site
-may exist for finished work (check the current project's own conventions before assuming one), but
-it is not a substitute for sending the file directly, and access to it may be restricted.
+sending that file the way any other attachment gets sent — Slack, email, a testing platform,
+wherever. Whoever gets it double-clicks it and it opens; no hosting, no link required. A shared
+prototype hosting site may exist for finished work (check the current project's own conventions
+before assuming one), but it is not a substitute for sending the file directly, and access to it
+may be restricted.
 
 ---
 
@@ -432,10 +474,12 @@ filler, written for someone who hasn't seen the prototype.
 **Full version:** Write the ticket for a developer who will read it once and think "just tell me
 what you want changed" — product and design staff read it too, so keep the jargon out. Include:
 design rationale in three sentences, what changes, what to test, open questions. Nothing else —
-don't explain what isn't being done. Cite the prototype as the evidence and **quote its `Answer:`
-line verbatim** — that's what makes the Answer load-bearing rather than a field people skip — and
-its lint result. Include an opening prompt that lets a fresh session with no prior context
-implement this directly off main.
+don't explain what isn't being done. Cite the prototype as the evidence, and **state the question
+it was built to answer and what the review concluded, in the user's own words where you have
+them** — that conclusion exists only in this conversation, and the ticket is where it gets kept.
+Must-demonstrate items that held become the "what to test" list; ones that didn't become open
+questions. Include the lint result and an opening prompt that lets a fresh session with no
+prior context implement this directly off main.
 
 Do not create, comment on, or push anything to Jira without the user's explicit approval — draft
 the ticket and show it first.

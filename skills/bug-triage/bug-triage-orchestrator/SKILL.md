@@ -20,6 +20,11 @@ compatibility:
         Use the sooperset Atlassian MCP (mcp__mcp-atlassian-sooperset__*) — NOT the official
         Atlassian MCP. The official MCP has auth issues with the public Moodle tracker (moodle.atlassian.net).
         Confirmed in Alpha team standup 2026-05-21.
+    - name: github
+      note: >
+        Used by Step 2 (triage-find-regression) to query github.com/moodle/moodle commit history.
+        Public repo — no authentication required. Used via mcp__github__list_commits and
+        mcp__github__get_commit. If unavailable, Step 2 falls back to local git or returns SKIPPED.
 ---
 
 # Bug Triage Orchestrator
@@ -187,7 +192,8 @@ Steps 2, 3, and 4 have no inter-dependencies. Execute them together — start al
 
 **Step 2 — Recent changes analysis**
 Read `skills/bug-triage/triage-find-regression/SKILL.md` and follow its instructions.
-**Skip condition:** If the SKILL.md is not present or GitHub access has not been confirmed, set step 2 result to `SKIPPED` and note this in the triage note.
+The skill self-selects between two execution paths: GitHub MCP (preferred) or local git (fallback).
+**Skip condition:** If the SKILL.md is not present, or if both `mcp__github__list_commits` and local git are unavailable (the skill will report this), set step 2 result to `SKIPPED` and note this in the triage note. Do not attempt to probe availability yourself — the skill handles detection.
 
 **Step 3 — Bug validation**
 Read `skills/bug-triage/bug-triage-validation/SKILL.md` and follow its instructions.

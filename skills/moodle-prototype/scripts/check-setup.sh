@@ -25,11 +25,11 @@ echo
 # --- 1. Is the skill folder complete? -------------------------------------
 echo "1. Skill folder"
 missing=""
-for f in SKILL.md design-pass.md templates/course-page/TEMPLATE-shell.html scripts/proto-lint.js scripts/ui-audit.js; do
+for f in SKILL.md design-pass.md templates/course-page/TEMPLATE-shell.html scripts/proto-lint.js scripts/proto-export.js scripts/ui-audit.js; do
   [ -f "$SKILL_DIR/$f" ] || missing="$missing $f"
 done
 if [ -z "$missing" ]; then
-  pass "all five files are here (instructions, design pass, template, lint, census)"
+  pass "all six files are here (instructions, design pass, template, lint, export, census)"
 else
   bad "missing:$missing"
   note "Copy the WHOLE moodle-prototype folder, not just SKILL.md. Re-download it from"

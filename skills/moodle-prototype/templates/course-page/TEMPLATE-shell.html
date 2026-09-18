@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TEMPLATE: Moodle prototype shell (throwaway, not for merge)</title>
+<!-- The title a usability-test participant sees. proto-export.js swaps it in
+     for the working <title> above, so it must read like a real Moodle page and
+     say nothing about what is being studied. -->
+<meta name="clean-title" content="Course: Biology 101">
 
 <!-- Fonts + icons via CDN for Figma fidelity (needs network on first open;
      degrades to system font + missing-glyph boxes offline). -->
@@ -31,13 +35,21 @@
     one that was reviewed against Figma.
 
     HOW TO USE IT
-    1. Copy → rename → change the <title> and this header comment to state the
-       ONE design question the prototype answers.
+    1. Copy → rename → change the <title> and this header comment to say what
+       screen this is (the title is what a reviewer sees in the tab; the
+       question it answers stays in the conversation, never in the file).
     2. Replace the placeholder in #prototype-content.
     3. Point the course index at your own sections (the SECTIONS array in JS).
-    4. Set the DEFAULTS block at the bottom of the JS to the state a reviewer
-       should land on (width mode, drawers open/closed, nav cap, guides).
-    5. Fill in the NOTES block at the very bottom before you share it.
+    4. Set the DEFAULTS block at the bottom of the JS to the state the file
+       should open on (width mode, drawers open/closed; guides and annotations
+       for reviewers).
+    5. Fill in the NOTES block at the very bottom before you share it. It holds
+       build decisions only. The research question and what was learned live
+       in the conversation and the ticket, never in this file: it may be
+       opened by a usability-test participant, and View Source is one key.
+    6. For a usability test, run scripts/proto-export.js on the file. It writes
+       a -test.html copy with every dev aid, annotation and comment removed and
+       the clean-title in place. Send that one; keep this one for reviewers.
 
     WHAT IS DELIBERATELY NOT HERE
     Edit-mode row controls, add/more menus, drag-to-reorder, annotations,
@@ -485,10 +497,12 @@
   body.ci-overlay.ci-open .backdrop,
   body.cb-overlay.cb-open .backdrop{ display:block; }
 
+  /* dev:start */
   /* =====================  DEV AIDS  =====================
-     Everything below is prototype scaffolding. Strip it before anyone screen-
-     records the prototype for a wider audience, or leave it. The panel
-     minimises to a "State" pill so it never blocks the screen it describes.
+     Everything from dev:start to dev:end is reviewer scaffolding. It is
+     REMOVED, not hidden, by scripts/proto-export.js when a usability-test
+     participant will open the file (the markers are how it knows what to cut).
+     The panel minimises to a "State" pill so it never blocks the screen it describes.
      Fixed ids, so every prototype's scaffolding is the same scaffolding:
        #devPanel  #devMin  #guidesBtn  #annotBtn  #measureBar  #debug */
   /* proto-lint-disable hex: dev scaffolding, never part of the design under review */
@@ -606,6 +620,7 @@
     color:var(--on-primary-muted); cursor:pointer; font-size:14px; line-height:1;
   }
   .annot-card .annot-x:hover{ color:var(--on-primary); }
+  /* dev:end */
 
   /* =====================  RESPONSIVE  =====================
      Figma header states:
@@ -863,6 +878,7 @@
 
   <div class="backdrop" id="backdrop"></div>
 
+  <!-- dev:start -->
   <!-- ===== DEV STATE SWITCHER (prototype only) =====
        Ships minimised by default (class="min" below) — a reviewer opening this
        cold should see the screen, not a control panel. Expand it yourself while
@@ -902,6 +918,7 @@
   <div class="guide g-col"    id="gColR"    data-label="reading column"></div>
   <div class="measure-bar" id="measureBar"></div>
   <div class="debug" id="debug" title="Click to hide dev overlays"></div>
+  <!-- dev:end -->
 
 <script>
 (function(){
@@ -980,10 +997,14 @@
     document.querySelectorAll(".ci-section").forEach(function(s){ s.classList.toggle("collapsed", anyOpen); });
   });
 
-  /* ---- element refs (debugEl first: updateDebug runs inside applyMode) ---- */
+  /* ---- element refs ---- */
   var body = document.body;
-  var debugEl = document.getElementById("debug");
   var backdrop = document.getElementById("backdrop");
+  /* updateDebug is a no-op here and is REPLACED inside the dev region below.
+     Core code calls it freely; a clean export removes the region and the
+     calls fall through to this stub, so nothing throws. Keep it a var, not
+     a function declaration, so the dev region can reassign it. */
+  var updateDebug = function(){};
 
   /* ---- drawer open/close ---- */
   function setLeft(open){
@@ -1126,8 +1147,10 @@
   handle.addEventListener("pointercancel", endDrag);
   handle.addEventListener("dblclick", function(){ setWidth(MIN); persistWidth(); });
 
+  // dev:start
   /* ---- debug readout ---- */
-  function updateDebug(){
+  var debugEl = document.getElementById("debug");
+  updateDebug = function(){
     var mode = body.classList.contains("ci-overlay") ? "overlay" : "push";
     debugEl.innerHTML =
       "viewport: <b>" + window.innerWidth + "px</b> · drawers: <b>" + mode + "</b><br>" +
@@ -1137,8 +1160,8 @@
       " · blocks: <b>" + (body.classList.contains("cb-open") ? "open" : "closed") + "</b>";
     refreshGuides();
     scheduleGuides();
-  }
-  window.addEventListener("resize", updateDebug);
+  };
+  window.addEventListener("resize", function(){ updateDebug(); });
 
   /* ---- alignment guides + measurement readout ---- */
   var measureBar = document.getElementById("measureBar");
@@ -1305,33 +1328,41 @@
   })();
 
   debugEl.addEventListener("click", function(){ body.classList.add("hide-dev"); });
+  // dev:end
 
   /* ============================================================
-     DEFAULTS: set the state a reviewer should land on.
-     Uncomment / edit as needed. Reviewers should not have to click
-     anything to see the thing you want them to look at. The panel
-     itself already ships minimised (see the markup above) — only
-     uncomment devMin.click() below if you want it to START EXPANDED
-     instead, which is the exception, not the norm.
+     DEFAULTS: set the state the file should open on. Nobody should have
+     to click anything to see the thing you want them to look at.
+     The first block survives a clean export; the dev block does not.
      ============================================================ */
   // body.classList.remove("limitedwidth");            // open on a full-width page
   // setRight(true);                                   // open the block drawer
+
+  // dev:start
+  /* Reviewer-only landing state. The panel already ships minimised (see the
+     markup above); only uncomment devMin.click() to START EXPANDED, which is
+     the exception, not the norm. */
   // document.getElementById("guidesBtn").click();     // open with guides on
   // document.getElementById("devMin").click();        // start EXPANDED instead of the default minimised
   // setAnnots(true);                                  // land with annotations showing (Step 6 asks which)
+  // dev:end
 
   updateDebug();
 })();
 </script>
 
 <!-- NOTES
-     The one block a prototype author owns. Six fixed fields, filled in before
-     sharing; proto-lint fails a file whose Question or Answer is still a
-     placeholder. Keep it short (lint warns past 120 lines) — this block is
-     for THIS prototype's decisions, not a copy of the shell's.
+     The one block a prototype author owns: build decisions for whoever picks
+     this file up next. Four fixed fields. Keep it short (lint warns past 120
+     lines); this block is for THIS prototype's decisions, not a copy of the
+     shell's.
 
-Question:  <one sentence a reviewer can answer yes or no. If you can't write it, you're not ready to build>
-Answer:    <fill in after review>
+     NOT here, ever: the question this prototype exists to answer, what the
+     review concluded, or who it was tested with. Those live in the
+     conversation and the ticket. This file may be opened by a usability-test
+     participant, and proto-lint fails any file that carries a research
+     question or a conclusion for exactly that reason.
+
 Fidelity:  rough
 Figma nodes: none (Boost-loose)
 Decisions:
@@ -1368,6 +1399,11 @@ Decisions already baked into this shell (do not re-litigate per prototype):
   looks a shade different from an older prototype, that's why.
 - The State panel ships minimised; annotations ship off. DEFAULTS decides the
   landing state, markup does not.
+- Two audiences, two files. Reviewers get this file with the State panel,
+  annotations and guides. Usability-test participants get the -test.html that
+  scripts/proto-export.js produces: dev:start/dev:end regions cut, data-annot
+  stripped, every comment removed, clean-title in place. Never hand a
+  participant the reviewer file.
 
 Traps this shell already avoids (they cost real time to find):
 - html,body{height:100%} makes anything taller than one screen silently

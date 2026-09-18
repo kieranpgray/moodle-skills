@@ -9,6 +9,8 @@
  * Usage:
  *   node proto-lint.js <file.html>            lint one file
  *   node proto-lint.js --all <dir>            lint every PROTOTYPE-*.html and TEMPLATE-*.html in dir
+ *   a file named *-test.html is a usability-test export (see proto-export.js) and gets the
+ *   clean-mode checks instead: no dev scaffolding, no annotations, no comments, neutral title
  *   add --json for machine output; --template <path> to override the reference template;
  *   --mds <dir> to point at lib/bundles/design-system/scss/tokens/ (auto-found in a checkout)
  *
@@ -177,6 +179,7 @@ function lint(file, opts) {
   const tplPath = opts.template || path.resolve(__dirname, "..", "templates", "course-page", "TEMPLATE-shell.html");
   if (fs.existsSync(tplPath) && path.resolve(tplPath) !== path.resolve(file)) tpl = fs.readFileSync(tplPath, "utf8");
   const isTemplate = /TEMPLATE-/.test(path.basename(file));
+  const isClean = /-test\.html$/i.test(path.basename(file));
 
   // parse all css
   const allRules = []; const allFences = []; const badFences = [];
@@ -187,32 +190,55 @@ function lint(file, opts) {
   }
   for (const f of badFences) add("fence-reason", "WARN", `proto-lint-disable at :${f.line} has no reason — not honoured`, [{ line: f.line }]);
 
-  // --- D1: Answer / Question / title / notes size ---
+  // --- D1: no research intent in the file; title; export markers ---
+  // The question a prototype answers and what the review concluded live in the
+  // conversation and the ticket, never here: a usability-test participant can
+  // View Source. Any file, reviewer or clean, fails on a Question:/Answer: line.
   const fieldLines = (name) => { const out = []; const re = new RegExp(`^[ \\t]*${name}:[ \\t]*(.*)$`, "gmi"); let m; while ((m = re.exec(html))) out.push({ line: lineOf(html, m.index), value: m[1].trim() }); return out; };
-  const answers = fieldLines("Answer");
-  if (!isTemplate) {
-    if (answers.length === 0) add("answer-single", "FAIL", "no `Answer:` line in NOTES");
-    else if (answers.length > 1) add("answer-single", "FAIL", `${answers.length} Answer lines`, answers);
-    const a = answers[0];
-    if (a && (a.value.length < 40 || PLACEHOLDER.test(a.value))) add("answer-filled", "FAIL", a.value ? `Answer is placeholder/too short (${a.value.length} chars)` : "Answer is empty", [a]);
-    else if (a) add("answer-filled", "PASS", "Answer filled");
-    const q = fieldLines("Question")[0];
-    if (!q || PLACEHOLDER.test(q.value) || q.value.length < 15) add("question-filled", "FAIL", q ? "Question is placeholder" : "no `Question:` line", q ? [q] : []);
-    else add("question-filled", "PASS", "Question filled");
-    if (tpl) {
-      const t1 = (html.match(/<title>([\s\S]*?)<\/title>/i) || [])[1]; const t2 = (tpl.match(/<title>([\s\S]*?)<\/title>/i) || [])[1];
-      if (t1 && t2 && t1.trim() === t2.trim()) add("title-changed", "FAIL", "<title> still the template's", [{ line: lineOf(html, html.search(/<title>/i)) }]);
+  const leaks = [...fieldLines("Question"), ...fieldLines("Answer")];
+  if (leaks.length) add("intent-leak", "FAIL", `${leaks.length} Question:/Answer: line(s) in the file — research intent belongs in the conversation and the ticket, not in something a participant can View Source on`, leaks.slice(0, 4));
+  else add("intent-leak", "PASS", "no research question or conclusion in the file");
+  const t1 = (html.match(/<title>([\s\S]*?)<\/title>/i) || [, ""])[1].trim();
+  if (isClean) {
+    if (/prototype|throwaway|template|\bproto\b|not for merge/i.test(t1)) add("clean-title", "FAIL", `title still says what this is: "${t1.slice(0, 60)}"`, [{ line: lineOf(html, html.search(/<title>/i)) }]);
+    else add("clean-title", "PASS", `title "${t1.slice(0, 50)}"`);
+    const devLeft = [];
+    for (const id of ["devPanel", "devMin", "guidesBtn", "annotBtn", "measureBar", "debug", "annotLayer"]) if (new RegExp(`id="${id}"`).test(html)) devLeft.push({ snippet: `#${id}` });
+    if (/\bdata-annot(-side)?=/.test(html)) devLeft.push({ snippet: "data-annot attribute" });
+    if (/class="[^"]*\b(devpanel|devswitch|guide|measure-bar|annot-layer)\b/.test(html)) devLeft.push({ snippet: "dev scaffolding class" });
+    if (/dev:(start|end)/.test(html)) devLeft.push({ snippet: "stray dev:start/dev:end marker" });
+    if (devLeft.length) add("clean-no-dev", "FAIL", `${devLeft.length} piece(s) of reviewer scaffolding survived the export`, devLeft.slice(0, 6));
+    else add("clean-no-dev", "PASS", "no State panel, annotations, guides or debug strip");
+    const cm = html.match(/<!--/g) || [];
+    if (cm.length) add("clean-no-comments", "FAIL", `${cm.length} HTML comment(s) remain — NOTES and headers tell a participant what you're studying`, [{ line: lineOf(html, html.indexOf("<!--")) }]);
+    else add("clean-no-comments", "PASS", "no HTML comments");
+  } else {
+    if (!isTemplate && tpl) {
+      const t2 = (tpl.match(/<title>([\s\S]*?)<\/title>/i) || [, ""])[1].trim();
+      if (t1 && t2 && t1 === t2) add("title-changed", "FAIL", "<title> still the template's", [{ line: lineOf(html, html.search(/<title>/i)) }]);
       else add("title-changed", "PASS", "title changed");
     }
+    // The export script needs balanced markers to know what to cut, and a clean title to swap in.
+    const count = (re) => (html.match(re) || []).length;
+    const pairs = [["css", /^[ \t]*\/\* dev:start \*\//gm, /^[ \t]*\/\* dev:end \*\//gm], ["markup", /^[ \t]*<!-- dev:start -->/gm, /^[ \t]*<!-- dev:end -->/gm], ["js", /^[ \t]*\/\/ dev:start[ \t]*$/gm, /^[ \t]*\/\/ dev:end[ \t]*$/gm]];
+    const unbalanced = pairs.filter(([, a, b]) => count(a) !== count(b)).map(([k]) => k);
+    const present = pairs.filter(([, a]) => count(a) > 0).map(([k]) => k);
+    if (unbalanced.length) add("dev-markers", "FAIL", `unbalanced dev:start/dev:end in ${unbalanced.join(", ")} — proto-export.js can't make a clean copy`);
+    else if (present.length < 3) add("dev-markers", "WARN", `dev markers missing for ${["css", "markup", "js"].filter(k => !present.includes(k)).join(", ")} — the usability-test export will leave that scaffolding in`);
+    else add("dev-markers", "PASS", "dev regions marked for export");
+    const cmeta = html.match(/<meta\s+name="clean-title"\s+content="([^"]*)"/i);
+    if (!cmeta || !cmeta[1].trim()) add("clean-title", "WARN", 'no <meta name="clean-title"> — proto-export.js will refuse to make a usability-test copy');
+    else if (/prototype|throwaway|template|\bproto\b/i.test(cmeta[1])) add("clean-title", "WARN", `clean-title "${cmeta[1].slice(0, 40)}" still says what this is`);
+    else add("clean-title", "PASS", `clean-title "${cmeta[1].slice(0, 40)}"`);
   }
   // notes size + shell-notes integrity
-  const notesM = html.match(/<!--\s*NOTES\b([\s\S]*?)-->/);
+  const notesM = isClean ? null : html.match(/<!--\s*NOTES\b([\s\S]*?)-->/);
   if (notesM) {
     const lines = notesM[1].split("\n").length;
     if (lines > 120) add("notes-size", "WARN", `own NOTES is ${lines} lines (>120) — accretion`, [{ line: lineOf(html, notesM.index) }]);
     else add("notes-size", "PASS", `NOTES ${lines} lines`);
-  } else if (!isTemplate) add("notes-size", "WARN", "no `<!-- NOTES` block found");
-  if (tpl && !isTemplate) {
+  } else if (!isTemplate && !isClean) add("notes-size", "WARN", "no `<!-- NOTES` block found");
+  if (tpl && !isTemplate && !isClean) {
     const mine = html.match(/<!--\s*SHELL-NOTES\b[\s\S]*?-->/); const theirs = tpl.match(/<!--\s*SHELL-NOTES\b[\s\S]*?-->/);
     if (theirs) { if (!mine) add("shell-notes", "WARN", "SHELL-NOTES block missing (inherited traps lost)"); else if (mine[0] !== theirs[0]) add("shell-notes", "WARN", "SHELL-NOTES differs from template (edited or stale)"); else add("shell-notes", "PASS", "SHELL-NOTES intact"); }
   }
@@ -273,7 +299,8 @@ function lint(file, opts) {
     if (px) { const n = Math.round(parseFloat(px[1]) * (px[2] === "rem" ? 16 : 1) * 100) / 100; if (/^--sp-/.test(d.prop) && !mds.spacingPx.includes(n)) offMds.push({ line: d.line, snippet: `${d.prop}: ${d.value} (MDS spacing: ${mds.spacingPx.join("/")})` }); if (/^--r-/.test(d.prop) && !mds.radiusPx.includes(n)) offMds.push({ line: d.line, snippet: `${d.prop}: ${d.value} (MDS radius: ${mds.radiusPx.join("/")})` }); }
   }
   const mdsSrc = mds.source === "snapshot" ? "snapshot" : "live";
-  if (offMds.length) add("mds-values", "WARN", `${offMds.length} :root value(s) are not in the Moodle Design System (${mdsSrc} tokens) — invented colour/spacing/radius`, offMds.slice(0, 6));
+  // A clean export has lost its lint fences with its comments; the reviewer file it came from was the gate.
+  if (offMds.length) add("mds-values", isClean ? "INFO" : "WARN", `${offMds.length} :root value(s) are not in the Moodle Design System (${mdsSrc} tokens) — invented colour/spacing/radius`, offMds.slice(0, 6));
   else add("mds-values", "PASS", `every :root colour/spacing/radius is an MDS value (${mdsSrc})`);
   // Type scale is INFO here: icon glyphs share font-size with text and a static parse can't
   // tell them apart. ui-audit.js measures real text elements — read typography.offMdsScale there.
@@ -291,7 +318,7 @@ function lint(file, opts) {
   else add("scroll-trap", "PASS", finalHeight ? `html/body height ${finalHeight}` : "no fixed html/body height");
 
   // --- D4: dev panel, ids, annotations, guides ---
-  const dp = html.match(/<div[^>]*class="([^"]*\b(?:devpanel|devswitch)\b[^"]*)"[^>]*>/);
+  const dp = isClean ? null : html.match(/<div[^>]*class="([^"]*\b(?:devpanel|devswitch)\b[^"]*)"[^>]*>/);
   if (dp) {
     // Effective state after load = static `min` class XOR an un-commented devMin.click()
     // in DEFAULTS. Old convention: no class + click → minimised. New convention (template
@@ -304,12 +331,14 @@ function lint(file, opts) {
     else add("devpanel-min", "FAIL", staticMin ? "min class present but DEFAULTS un-comments devMin.click() — that now EXPANDS it" : "State panel starts expanded (no `min` class, no devMin.click())", [{ line: lineOf(html, (clicked && clickLine) ? clickLine.index : dp.index) }]);
     const want = ["devPanel", "devMin", "guidesBtn", "annotBtn"]; const missing = want.filter(id => !new RegExp(`id="${id}"`).test(html));
     if (missing.length) add("dev-ids", "WARN", `dev scaffolding ids not on convention: missing ${missing.join(", ")}`); else add("dev-ids", "PASS", "dev ids on convention");
-  } else add("devpanel-min", "FAIL", "no State panel (.devpanel) found");
+  } else if (!isClean) add("devpanel-min", "FAIL", "no State panel (.devpanel) found");
   const bodyTag = html.match(/<body[^>]*>/); const bodyCls = bodyTag ? (bodyTag[0].match(/class="([^"]*)"/) || [, ""])[1] : "";
-  if (/\bannot-on\b/.test(bodyCls)) add("annotations-off-on-load", "WARN", "annotations are ON in the static body class — decide this in DEFAULTS, not markup");
+  if (isClean) { /* annotations are meant to be gone */ }
+  else if (/\bannot-on\b/.test(bodyCls)) add("annotations-off-on-load", "WARN", "annotations are ON in the static body class — decide this in DEFAULTS, not markup");
   else add("annotations-off-on-load", "PASS", "annotations off on load");
   const guideCount = (html.match(/class="guide\b/g) || []).length;
-  if (guideCount >= 8 && /id="measureBar"/.test(html)) add("guides-present", "PASS", "alignment guides + measure bar present"); else add("guides-present", "WARN", `alignment guides incomplete (${guideCount}/8 guides${/id="measureBar"/.test(html) ? "" : ", no measureBar"})`);
+  if (isClean) { /* guides are meant to be gone */ }
+  else if (guideCount >= 8 && /id="measureBar"/.test(html)) add("guides-present", "PASS", "alignment guides + measure bar present"); else add("guides-present", "WARN", `alignment guides incomplete (${guideCount}/8 guides${/id="measureBar"/.test(html) ? "" : ", no measureBar"})`);
 
   // --- D5: top nav position ---
   const topbar = allRules.find(r => /(^|,)\s*\.topbar\s*(,|$)/.test(r.selector));
@@ -333,7 +362,7 @@ function lint(file, opts) {
   if (iconOnly.length || imgNoAlt.length) add("aria-basics", "FAIL", `${iconOnly.length} icon-only button(s) without aria-label, ${imgNoAlt.length} img without alt`, [...iconOnly, ...imgNoAlt].slice(0, 5).map(m => ({ line: lineOf(html, m.index) })));
   else add("aria-basics", "PASS", "icon buttons labelled, imgs have alt");
   if (genericAlt.length) add("aria-basics", "WARN", `${genericAlt.length} generic alt text (passes axe, means nothing)`, genericAlt.slice(0, 3).map(m => ({ line: lineOf(html, m.index) })));
-  if (!isTemplate) {
+  if (!isTemplate && !isClean) {
     const fn = fieldLines("Figma nodes")[0];
     if (!fn || (PLACEHOLDER.test(fn.value) && !/none/i.test(fn.value))) add("figma-nodes", "WARN", fn ? "Figma nodes is a placeholder" : "no `Figma nodes:` field (write `none (Boost-loose)` if there are none)");
     else add("figma-nodes", "PASS", `Figma nodes: ${fn.value.slice(0, 40)}`);
@@ -343,13 +372,13 @@ function lint(file, opts) {
   }
 
   // --- D7: awkward data (scoped to #prototype-content) ---
-  const slot = innerOfId(html, "prototype-content");
+  const slot = innerOfId(html, "prototype-content") ?? innerOfId(html, "page-content"); // clean exports rename the slot
   if (slot !== null) {
     const nodes = textNodes(slot); const longest = nodes.reduce((a, b) => (b.length > a.length ? b : a), "");
     const jsData = (html.split(/\/\*\s*PROTOTYPE DATA\s*\*\//)[1] || ""); const jsLong = [...jsData.matchAll(/["'`]([^"'`\n]{60,})["'`]/g)].length;
     if (longest.length >= 60 || jsLong) add("awkward-data", "PASS", `longest content string ${Math.max(longest.length, jsLong ? 60 : 0)} chars`);
-    else add("awkward-data", isTemplate ? "INFO" : "FAIL", `longest text in #prototype-content is ${longest.length} chars (<60) — data is too tidy to stress the layout`);
-    if (!/\b\d{4,}\b/.test(slot) && !/\b\d{4,}\b/.test(jsData)) add("awkward-data", isTemplate ? "INFO" : "WARN", "no ≥4-digit number in content — high-volume state untested");
+    else add("awkward-data", (isTemplate || isClean) ? "INFO" : "FAIL", `longest text in the content slot is ${longest.length} chars (<60) — data is too tidy to stress the layout`);
+    if (!/\b\d{4,}\b/.test(slot) && !/\b\d{4,}\b/.test(jsData)) add("awkward-data", (isTemplate || isClean) ? "INFO" : "WARN", "no ≥4-digit number in content — high-volume state untested");
   } else if (!isTemplate) add("awkward-data", "WARN", "no #prototype-content element — cannot scope the data check");
 
   // --- method: self-contained, size ---
