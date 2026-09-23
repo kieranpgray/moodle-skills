@@ -22,6 +22,11 @@
  *      the script refuses to write a file whose title would still say
  *      "prototype")
  *
+ * Wireframe builds need no special handling. The `body.wireframe` token block and the
+ * `body.classList.add("wireframe")` line in DEFAULTS both sit outside the dev regions, so a
+ * greyscale build stays greyscale; #wireframeBtn and its handler sit inside them, so a
+ * participant cannot flip fidelity mid-session. That is deliberate, not incidental.
+ *
  * Then run `node proto-lint.js <the -test.html>`; the lint recognises the
  * suffix and checks that nothing dev-shaped survived. Dependency-free.
  */

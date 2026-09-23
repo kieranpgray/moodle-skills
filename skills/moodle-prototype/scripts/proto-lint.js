@@ -308,6 +308,41 @@ function lint(file, opts) {
   for (const r of allRules) { if (fenced(allFences, "type-scale", r.line) || fenced(allFences, "hex-outside-root", r.line)) continue; for (const d of r.decls) { if (d.prop !== "font-size") continue; const m = d.value.match(/^([\d.]+)(px|rem)$/); if (!m) continue; const n = Math.round(parseFloat(m[1]) * (m[2] === "rem" ? 16 : 1)); if (!mds.fontSizePx.includes(n)) offType.push({ line: r.line, snippet: `${r.selector.slice(0, 30)} { font-size: ${d.value} }` }); } }
   if (offType.length) add("type-scale", "INFO", `${offType.length} font-size literal(s) off the MDS scale (${mds.fontSizePx.join("/")}px) — icons are fine, text is not; confirm with ui-audit.js`, offType.slice(0, 4));
 
+  // --- wireframe: the greyscale build must actually be grey, and must land in it ---
+  // Contrast is deliberately NOT checked on a wireframe: it is for structure and flow,
+  // not for WCAG. What IS checked is that the mode exists, is reachable, and is honest.
+  const fidLine = fieldLines("Fidelity")[0];
+  const isWireframe = !!(fidLine && /^wireframe\b/i.test(fidLine.value));
+  const wfRule = allRules.find(r => /(^|,)\s*body\.wireframe\s*(,|$)/.test(r.selector));
+  if (!isClean) {
+    if (!wfRule) add("wireframe-mode", isWireframe ? "FAIL" : "WARN", "no `body.wireframe` token override block — the Wireframe toggle will do nothing");
+    else {
+      // every colour it sets must be greyscale (R=G=B) or transparent-ish rgba white/black
+      const bad = [];
+      for (const d of wfRule.decls) {
+        if (!d.prop.startsWith("--")) continue;
+        if (fenced(allFences, "mds-values", d.line || wfRule.line)) continue;
+        // MDS greys are cool-tinted, not pure R=G=B (#1d2125 has chroma 8, #6a737b has 17),
+        // so test near-neutrality rather than equality. Every MDS grey is <= 17; the least
+        // saturated MDS colour that isn't a grey is far above 24.
+        for (const h of d.value.match(/#[0-9a-fA-F]{6}\b/g) || []) {
+          const ch = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+          const chroma = Math.max(...ch) - Math.min(...ch);
+          if (chroma > 24) bad.push({ line: wfRule.line, snippet: `${d.prop}: ${h} (chroma ${chroma}, needs <= 24)` });
+        }
+      }
+      if (bad.length) add("wireframe-mode", "FAIL", `${bad.length} non-grey value(s) in body.wireframe — a wireframe with colour in it isn't one`, bad.slice(0, 5));
+      else add("wireframe-mode", "PASS", `body.wireframe sets ${wfRule.decls.filter(d => d.prop.startsWith("--")).length} tokens, all greyscale`);
+    }
+    // A wireframe build has to LAND in wireframe, not need a click to get there.
+    if (isWireframe) {
+      const bodyCls2 = (html.match(/<body[^>]*class="([^"]*)"/) || [, ""])[1];
+      const dflt = html.match(/^[ \t]*(\/\/)?[ \t]*body\.classList\.add\("wireframe"\)/m);
+      if (/\bwireframe\b/.test(bodyCls2) || (dflt && !dflt[1])) add("wireframe-default", "PASS", "lands in wireframe");
+      else add("wireframe-default", "FAIL", "Fidelity is wireframe but nothing turns it on: un-comment `body.classList.add(\"wireframe\")` in DEFAULTS");
+    }
+  }
+
   // --- D3: scroll trap ---
   let finalHeight = null; let hLine = null;
   for (const r of allRules) {
@@ -329,7 +364,7 @@ function lint(file, opts) {
     const effectiveMin = staticMin !== clicked;
     if (effectiveMin) add("devpanel-min", "PASS", `State panel starts minimised (${staticMin ? "min class" : "devMin.click()"})`);
     else add("devpanel-min", "FAIL", staticMin ? "min class present but DEFAULTS un-comments devMin.click() — that now EXPANDS it" : "State panel starts expanded (no `min` class, no devMin.click())", [{ line: lineOf(html, (clicked && clickLine) ? clickLine.index : dp.index) }]);
-    const want = ["devPanel", "devMin", "guidesBtn", "annotBtn"]; const missing = want.filter(id => !new RegExp(`id="${id}"`).test(html));
+    const want = ["devPanel", "devMin", "guidesBtn", "annotBtn", "wireframeBtn"]; const missing = want.filter(id => !new RegExp(`id="${id}"`).test(html));
     if (missing.length) add("dev-ids", "WARN", `dev scaffolding ids not on convention: missing ${missing.join(", ")}`); else add("dev-ids", "PASS", "dev ids on convention");
   } else if (!isClean) add("devpanel-min", "FAIL", "no State panel (.devpanel) found");
   const bodyTag = html.match(/<body[^>]*>/); const bodyCls = bodyTag ? (bodyTag[0].match(/class="([^"]*)"/) || [, ""])[1] : "";
@@ -367,7 +402,7 @@ function lint(file, opts) {
     if (!fn || (PLACEHOLDER.test(fn.value) && !/none/i.test(fn.value))) add("figma-nodes", "WARN", fn ? "Figma nodes is a placeholder" : "no `Figma nodes:` field (write `none (Boost-loose)` if there are none)");
     else add("figma-nodes", "PASS", `Figma nodes: ${fn.value.slice(0, 40)}`);
     const fid = fieldLines("Fidelity")[0];
-    if (!fid || !/^(rough|considered)\b/i.test(fid.value)) add("fidelity-field", "WARN", fid ? `Fidelity should be rough|considered, got "${fid.value.slice(0, 20)}"` : "no `Fidelity:` field");
+    if (!fid || !/^(wireframe|rough|considered)\b/i.test(fid.value)) add("fidelity-field", "WARN", fid ? `Fidelity should be wireframe|rough|considered, got "${fid.value.slice(0, 20)}"` : "no `Fidelity:` field");
     else add("fidelity-field", "PASS", `Fidelity: ${fid.value}`);
   }
 

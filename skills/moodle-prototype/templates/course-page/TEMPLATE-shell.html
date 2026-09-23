@@ -130,6 +130,49 @@
     --btn:40px;
   }
 
+  /* =====================  WIREFRAME MODE  =====================
+     body.wireframe remaps every COLOUR token to a grey from the MDS grey ramp
+     ($mds-color-gray-100..900) and touches nothing else: layout, spacing, type
+     and every interaction stay identical. So a wireframe and an on-system build
+     are the same file, and #wireframeBtn flips between them.
+
+     Building in wireframe? Keep using var(--primary) and friends; this block is
+     what turns them grey. A hardcoded grey defeats the toggle.
+
+     The trap: anything distinguishable by colour ALONE collapses here. The
+     substitutes below (.wireframe .ci-activity.pageitem etc.) are how the shell
+     keeps its states readable. Do the same for anything you add.
+     ============================================================ */
+  body.wireframe{
+    --text-default:#1d2125; --text-subtle:#495057; --text-muted:#6a737b;   /* gray-900/700/600 */
+    --text-inverse:#f8f9fa;                                                 /* gray-100 */
+    --bg-subtle:#f8f9fa; --bg-strong:#e9ecef;                               /* gray-100/200 */
+    --border-subtle:#e9ecef; --border-default:#dee2e6; --border-ring:#8f959e; /* gray-200/300/500 */
+    --primary:#495057; --primary-dark:#343a40; --primary-active:#1d2125;    /* gray-700/800/900 */
+    --primary-light:#f8f9fa; --primary-subtle:#e9ecef;                      /* gray-100/200 */
+    --surface:#ffffff; --page-bg:#ffffff;
+    --ci-row-hover:#e9ecef;
+    --danger:#495057; --danger-light:#e9ecef;
+    --success:#495057; --success-light:#e9ecef;
+    --warning:#495057; --warning-light:#e9ecef;
+    --info:#495057; --info-light:#e9ecef;
+    --activity-magenta:#6a737b; --activity-magenta-bg:#e9ecef;
+    --activity-teal:#6a737b;    --activity-teal-bg:#e9ecef;
+    --activity-purple:#6a737b;  --activity-purple-bg:#e9ecef;
+    --activity-orange:#6a737b;  --activity-orange-bg:#e9ecef;
+    --on-primary:#ffffff; --on-primary-muted:rgba(255,255,255,.75);
+    --focus-ring:2px solid var(--text-default);
+    /* proto-lint-disable mds: a flat grey stands in for avatar art in wireframe */
+    --gradient-avatar:#ced4da;   /* gray-400 */
+    /* proto-lint-enable */
+  }
+  /* Non-colour substitutes: each of these reads as a distinct state in grey.
+     Feedback states also carry their own icon in the markup, not just a colour. */
+  body.wireframe .ci-activity.pageitem{ box-shadow:inset 3px 0 0 var(--text-default); font-weight:var(--fw-semibold); }
+  body.wireframe .ci-acticon{ opacity:.75; }
+  body.wireframe .nav-pill.on{ text-decoration:underline; text-underline-offset:3px; }
+  body.wireframe .avatar{ border:1px solid var(--border-ring); }
+
   *{ box-sizing:border-box; }
   /* min-height, NOT height. `height:100%` on html/body caps the document at
      the viewport and any content taller than one screen becomes silently
@@ -901,6 +944,7 @@
     <div class="devrow">
       <button class="devbtn" id="guidesBtn">Guides</button>
       <button class="devbtn" id="annotBtn">Annotations</button>
+      <button class="devbtn" id="wireframeBtn" aria-pressed="false">Wireframe</button>
     </div>
   </div>
 
@@ -1291,6 +1335,16 @@
   }
   annotBtn.addEventListener("click", function(){ setAnnots(!body.classList.contains("annot-on")); });
 
+  /* ---- wireframe toggle: greyscale on, colour off, same layout either way ---- */
+  var wireframeBtn = document.getElementById("wireframeBtn");
+  function setWireframe(on){
+    body.classList.toggle("wireframe", on);
+    wireframeBtn.classList.toggle("on", on);
+    wireframeBtn.setAttribute("aria-pressed", String(on));
+    refreshGuides();
+  }
+  wireframeBtn.addEventListener("click", function(){ setWireframe(!body.classList.contains("wireframe")); });
+
   /* ---- page width switcher: limited (830px cap) vs full ----
      Note what does NOT change: the nav cap. A full-width page must not widen
      the top navigation. Screens get brought in line with the cap one at a
@@ -1337,6 +1391,7 @@
      ============================================================ */
   // body.classList.remove("limitedwidth");            // open on a full-width page
   // setRight(true);                                   // open the block drawer
+  // body.classList.add("wireframe");                  // land in wireframe (Fidelity: wireframe)
 
   // dev:start
   /* Reviewer-only landing state. The panel already ships minimised (see the
@@ -1399,6 +1454,12 @@ Decisions already baked into this shell (do not re-litigate per prototype):
   looks a shade different from an older prototype, that's why.
 - The State panel ships minimised; annotations ship off. DEFAULTS decides the
   landing state, markup does not.
+- Wireframe mode is a token override on body.wireframe, not a second stylesheet:
+  only colour changes, so the same file serves both fidelities and #wireframeBtn
+  flips it. A wireframe build adds the class in DEFAULTS (outside the dev block,
+  so it survives a usability-test export). Anything distinguishable by colour
+  alone collapses in grey, so every state needs a second signal: weight, a
+  border, or an inset bar. Contrast is NOT checked on a wireframe.
 - Two audiences, two files. Reviewers get this file with the State panel,
   annotations and guides. Usability-test participants get the -test.html that
   scripts/proto-export.js produces: dev:start/dev:end regions cut, data-annot

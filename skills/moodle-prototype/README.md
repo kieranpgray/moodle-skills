@@ -61,14 +61,16 @@ scan". The skill will:
 
 1. Say in one line what it takes the question to be (what this prototype exists to find out) and
    let you correct it. That question stays in the chat; it never goes into the file.
-2. Check your setup and copy its template into `public/prototypes/` in your Moodle folder.
-3. Read the real Moodle code for that feature and tell you what it found.
-4. Build the prototype and run the quality check on it.
-5. Ask who will open the file: internal reviewers, usability-test participants, or both.
+2. Ask which pathway and fidelity you want, as clickable options. Fidelity is wireframe
+   (greyscale, still fully interactive), on-system, or considered.
+3. Check your setup and copy its template into `public/prototypes/` in your Moodle folder.
+4. Read the real Moodle code for that feature and tell you what it found.
+5. Build the prototype and run the quality check on it.
+6. Ask who will open the file: internal reviewers, usability-test participants, or both.
    Reviewers get the file with its State panel and annotations (and it asks whether those show on
    load or on click). Participants get a separate clean copy with all of that removed and a
    neutral title, so nothing in the file says what you're studying.
-6. Hand you the file path(s). Double-click, or drag into a browser.
+7. Hand you the file path(s). Double-click, or drag into a browser.
 
 If the request is richer (a decision riding on it, stakeholders reviewing, a fidelity rule) it
 takes a longer path with a plan and Figma grounding first. It tells you which path it's on.
@@ -96,7 +98,7 @@ where.
 |---|---|
 | `SKILL.md` | The instructions Claude follows |
 | `design-pass.md` | The design QA pass: what gets checked, and the rule that the Moodle Design System beats generic advice |
-| `templates/course-page/TEMPLATE-shell.html` | The starting point for every prototype: top nav, course index, block drawer, state switcher, annotations, all on MDS tokens and Noto Sans |
+| `templates/course-page/TEMPLATE-shell.html` | The starting point for every prototype: top nav, course index, block drawer, state switcher, annotations, a greyscale wireframe mode, all on MDS tokens and Noto Sans |
 | `scripts/proto-lint.js` | The quality gate (Node, no dependencies) |
 | `scripts/proto-export.js` | Makes the usability-test copy: strips the State panel, annotations, guides and every comment, swaps in a neutral title |
 | `scripts/ui-audit.js` | A measurement script Claude pastes into the browser to check type, spacing and contrast on the rendered page |

@@ -1,15 +1,20 @@
-# Design pass
+# Design pass — the optional long form
 
-A QA stage that runs after a first version of the prototype exists (either from
-step 2's shortcut or step 3+4's considered path) and before step 5's correction against real
-Moodle. It catches internal hierarchy, spacing and contrast problems cheaply, before step 5's
-side-by-side screenshot diffing gets distracted by them.
+**Read SKILL.md Step 4.5 first.** That is the design pass: measure the rendered page, fix
+anything that invented a value the design system already has, stop at the fidelity you chose.
+On the shortcut path it is two commands and nothing on this page is needed.
 
-If the [refactoring-ui-skills](https://github.com/gnurio/refactoring-ui-plugin) plugin is
-installed, use its ten named PASS/FAIL checks, invoked individually (e.g.
-`Skill(skill: "refactoring-ui-skills:01-establish-visual-hierarchy")`), following the phase table
-below. If it isn't installed, skip the named checks and go straight to the audit loop and the
-plain-language review in "No plugin installed" — don't block the prototype on a missing plugin.
+This page is the long form, for the considered path only, and only when the
+[refactoring-ui-skills](https://github.com/gnurio/refactoring-ui-plugin) plugin is installed. It
+maps the book's ten named checks onto the phases of a build, invoked individually (e.g.
+`Skill(skill: "refactoring-ui-skills:01-establish-visual-hierarchy")`).
+
+Be clear about what it adds. Six of the ten are conformance questions that `ui-audit.js` answers
+better, because the census measures the actual page where the book generalises. The three worth
+invoking are the ones no script can check: 01 (is the primary element the first thing your eye
+lands on), 10 (is the grouping legible) and 07 (does the empty state exist at all). If the plugin
+isn't installed, skip the named checks entirely and use the audit loop and the plain-language
+review in "No plugin installed" below. Never block a prototype on a missing plugin.
 
 ## Rule 0 — the design system wins
 
@@ -58,8 +63,14 @@ never declared (a silent fallback to nothing).
 
 ## When to run what
 
-The pass is split into **conformance** (always) and **legibility** (only when a decision rides on
-the review). Nothing on either tier is polish. NN/g's aesthetic-usability effect is the reason:
+**A wireframe skips this pass entirely.** `Fidelity: wireframe` means greyscale, and there is no
+palette to conform to; contrast is explicitly out of scope, because a wireframe is for structure
+and flow, not for WCAG. The one thing to confirm is that every state the prototype is about is
+still distinguishable in grey. If two states look identical, the prototype can't answer its
+question, and the fix is a non-colour signal (weight, a border, an inset bar), not a colour.
+
+For the other two fidelities, the pass is split into **conformance** (always) and **legibility**
+(only when a decision rides on the review). Nothing on either tier is polish. NN/g's aesthetic-usability effect is the reason:
 a polished prototype makes reviewers comment on the visuals instead of the problem it was built
 to expose, and hi-fi reads as "done". Conformance makes the prototype more on-system without
 making it prettier. Legibility (clutter, empty states) removes what a reviewer would otherwise
@@ -71,6 +82,7 @@ trigger is the kind of review: a critique session stays `rough`, a go/no-go on a
 
 | Phase | Tier | Checks | What you're actually doing |
 |---|---|---|---|
+| **Wireframe builds** | none | none | Skipped. No palette, no contrast target. Check instead that no two states are distinguishable by colour alone. |
 | **Before any markup** | conformance | 01 visual hierarchy, 10 group related elements, 05 button hierarchy | One line per screen: what is primary, secondary, tertiary; which elements form groups; which single action is the primary button. Written down before CSS exists, this is cheap; after, it's a rewrite. |
 | **While building** | conformance | 04 spacing, 02 typography, 03 palette | Pull from the token set above. Keep within-group gaps smaller than between-group gaps. Reach for weight and colour before size. |
 | **After it renders** | conformance | 09 contrast, plus `ui-audit.js`'s `scroll.trapped` | Measure, don't squint — see the audit loop below. `scroll.trapped: true` means content below the fold is unreachable; fix it before anything else. |

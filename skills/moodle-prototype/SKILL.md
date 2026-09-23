@@ -30,10 +30,35 @@ because it feels obvious.
 
 ---
 
+## Two questions you always ask, using AskUserQuestion
+
+These are not optional and they are not inferred from the first message. Use the
+**`AskUserQuestion` tool** so the user gets selectable options rather than a paragraph to read
+and answer in prose.
+
+1. **Before building: pathway and fidelity.** End of Mode detection, before Step 0. Never pick
+   these from the phrasing of the ask alone. Propose what you think fits, and ask. Lead the same
+   message with the question the prototype is answering, so a wrong reading of the ask gets
+   corrected here rather than after a build.
+2. **Before handing over: audience.** Step 6. Reviewers, usability-test participants, or both.
+   This decides what gets shipped, so it is always asked, even when the answer seems obvious.
+
+Ask both even when you think you know. A wrong guess on either one wastes the whole build: the
+wrong fidelity means rebuilding, and the wrong audience means a participant sees the reviewer
+scaffolding. Two clicks from the user costs nothing by comparison.
+
+The only exception is a genuinely non-interactive run (no user in the loop, for example a
+scripted eval). Then use the stated default for each, and say in the report which defaults you
+used and that you could not ask. Do not treat "it seemed clear from the request" as
+non-interactive.
+
+---
+
 ## Mode detection — do this before anything else
 
-Read the request and pick a branch. This changes which steps below get skipped, so don't guess —
-if it's genuinely unclear which applies, ask.
+Read the request to work out which branch probably applies, then **confirm it with the user via
+`AskUserQuestion`**, using the two questions specified at the end of this section. The
+setup-check branch is the only one you act on without asking, because the user named it.
 
 - **Setup check only** (`/moodle-prototype check`, "is my setup ready", "can I use this here",
   or any first contact from someone who sounds unsure the skill will work on their machine) —
@@ -45,13 +70,17 @@ if it's genuinely unclear which applies, ask.
   the script is the same answer every time, a look around isn't.
 - **Bare ask** ("let's prototype the gradebook", "mock up how the course index could look") — no
   stated question, no requirements, no mention of stakeholders or a real decision riding on it.
-  Default to the **shortcut path**: Step 0, Step 1 (good-enough tier), then Step 2. Don't reach
-  for Step 3's planning or Step 4's Figma grounding unless the result comes back thin, or the
-  user redirects.
+  The **shortcut path** is the likely fit: Step 0, Step 1 (good-enough tier), then Step 2. Propose
+  it and confirm. Don't reach for Step 3's planning or Step 4's Figma grounding unless the user
+  chooses it, the result comes back thin, or they redirect.
 - **Rich brief already given** — the request already states what to demonstrate, what data to
   use, a fidelity rule, or explicitly says this is going in front of stakeholders for a decision.
-  Skip straight to the **considered path**: Step 0, Step 1 (full tier), then Step 3. Don't re-ask
-  for information already given.
+  The **considered path** is the likely fit: Step 0, Step 1 (full tier), then Step 3. Confirm the
+  pathway, but don't re-ask for information already given in the brief.
+- **Wireframe asked for** ("wireframe", "greyscale", "just the structure", "low fidelity", "before
+  we get into colour") — the user has named the fidelity. Take it as given rather than asking
+  again, and confirm the pathway only. A wireframe runs on either the shortcut or the considered
+  path; it is a fidelity, not a pathway.
 - **No existing feature to read** — genuinely new functionality, nothing in the codebase to
   ground Step 1 against. Skip Step 1 and Step 2/3 entirely. Instead, sketch two or three
   structurally different directions rather than build one ("give me three different ways to
@@ -60,14 +89,46 @@ if it's genuinely unclear which applies, ask.
   or keep iterating on it here if the idea is still forming. None of the remaining steps in this
   file apply until a direction is chosen and something exists to correct against.
 
+### Ask the pathway and the fidelity
+
+One `AskUserQuestion` call, two questions, before Step 0. Put the option you think fits first and
+mark it "(Recommended)". Keep the labels short; the descriptions carry the trade-off.
+
+**Lead the message with the question this prototype is answering**, as one sentence (see above).
+This is the only moment the user is held before the build, so it's the only moment a wrong
+question is cheap to fix.
+
+**Question 1, header "Pathway":**
+- *Build fast, fix later* — reads the code, builds something clickable straight away, fixes what's
+  wrong once you can see it. Fewest turns.
+- *Plan it properly first* — plans before building, states its assumptions, builds to Figma frames,
+  corrects against real Moodle. More turns, for when the answer has to hold up.
+- *Three directions* — nothing in the codebase to read, so sketch two or three structurally
+  different options instead of building one.
+
+**Question 2, header "Fidelity":**
+- *Wireframe* — greyscale, same layout and data, everything still clickable. For structure and
+  flow questions, before colour is a topic.
+- *On-system* — Moodle Design System colours and type. The default.
+- *Considered* — on-system plus the legibility pass, for a decision that rides on the review.
+
+Skip question 2 only when the user already named the fidelity in their request. If they chose
+*Three directions*, skip Steps 1 to 5 and follow the "No existing feature to read" branch above;
+fidelity still applies to whatever gets built.
+
 **The question comes first, and it lives in the conversation.** Before reading any code, state
 in one line what this prototype exists to find out. Exploratory is fine, and on the shortcut path
 it's the norm: "how might we use the forum capability we already have, but present it in a way
 that feels modern and more intuitive?" is a complete question. Don't force it into a yes/no; that
-picks the design before the prototype has had a chance to. On a bare ask, propose the question
-yourself from what was said ("I'll take the question as: how might the discussion list read at a
-glance for a teacher with 40 active threads. Correct me if that's off") and carry on; don't block
-on it. On a rich brief, it's already there. The checkable part lives one level down, in Step 3's
+picks the design before the prototype has had a chance to.
+
+On a bare ask, propose the question yourself from what was said, and **put it in the same message
+as the pathway question below**. That call blocks, so the user gets a real chance to correct the
+question before anything is built, which a line of prose they may not be watching for does not.
+One sentence is enough: "I'll take the question as: how might the discussion list read at a
+glance for a teacher with 40 active threads." Don't ask them to approve it separately; if they
+pick their options without comment, the question stands. On a rich brief, it's already there and
+you restate it rather than proposing one. The checkable part lives one level down, in Step 3's
 must-demonstrate list, and only the considered path needs it. Hold the question for the whole
 session: it decides what Step 2 shows, what Step 4.5 checks, and what the ticket says. **It never
 goes into the file.** A prototype may be opened by a usability-test participant, View Source is
@@ -222,7 +283,7 @@ anything ambiguous rather than guessing.
 - **Data** — the source, and the hard cases specifically. Minimum, inside `#prototype-content`:
   one string of 60+ characters, one zero/empty state, one count of 1,000+ (the template's
   `AWKWARD` constants). Tidy invented data hides the exact problem the prototype exists to surface.
-- **Fidelity** — `rough` or `considered`, written into the NOTES `Fidelity:` field so reviewers
+- **Fidelity** — `wireframe`, `rough` or `considered`, written into the NOTES `Fidelity:` field so reviewers
   calibrate what they're looking at; plus Boost-loose or Figma-accurate, and which wins where they
   conflict, with the reason noted. Figma node IDs go in the NOTES `Figma nodes:` field, or
   literally `none (Boost-loose)` if there are none — never a placeholder.
@@ -286,47 +347,65 @@ six weeks later it's the only way to know what "matches the design" actually mea
 
 ---
 
-## Step 4.5 — design QA pass, leveraging refactoring-ui-skills
+## Step 4.5 — check it against the design system
 
-Runs once a first version exists — from either Step 2's shortcut build or Step 3+4's considered
-build — and before Step 5. It is split in two, and the split is the point:
+Runs once a first version exists, from either path, before Step 5. **What it does in one
+sentence: measure the rendered page, and fix anything that invented a value the design system
+already has.**
 
-- **Conformance, always.** Tokens, spacing scale, contrast, hierarchy. These make the prototype
-  *more on-system*, not prettier, so they run on every build without asking. Set
-  `Fidelity: rough` in NOTES. **On the shortcut path, conformance is the `ui-audit.js` census
-  scoped to `#prototype-content` plus `proto-lint` — not four separate skill invocations.** The
-  census is what catches an off-scale gap or a 4.07:1 chip; the named refactoring-ui checks
-  (02/03/04/09) are for the considered path, where the extra turns are already budgeted.
-- **Legibility, only when a decision rides on the review.** Clutter (06) and empty states (07).
-  Neither is polish: clutter removal makes the hierarchy readable, and a missing zero state is a
-  hole, not restraint. A reviewer who can't read the hierarchy judges the noise instead of the
-  design. Ask before running these. Set `Fidelity: considered` if they ran. The trigger is the
-  kind of review, not who's in it: a critique session stays `rough`; a go/no-go on a direction
-  gets `considered`. Shadows (08) are not on either tier — the shell's `--shadow-*` tokens are
-  MDS values and Rule 0 applies; report a shadow problem as a design-system finding.
+That's the whole job on the shortcut path. Two commands, no skill invocations:
 
-Why the split: NN/g's aesthetic-usability finding is that a polished prototype makes reviewers
-comment on the visuals instead of the problem it was built to expose, and hi-fi reads as "done".
-A rough prototype that answers its question beats a polished one that gets admired. The
-`Fidelity:` field exists so a reviewer knows which one they're looking at.
+1. **Measure.** Run [`scripts/ui-audit.js`](scripts/ui-audit.js) in the browser with
+   `window.__uiAuditRoot = '#prototype-content'` set first, or the numbers describe the shell
+   rather than what you built. It returns a census and judges nothing: distinct font size/weight
+   pairs, spacing off the scale, faces other than Noto Sans, contrast ratios with selectors,
+   distinct colours, shadows, radii, and `scroll.trapped`.
+2. **Compare and fix.** Read `typography.offMdsScale` and `typography.nonMdsFaces` first: text
+   off the MDS scale or in another face is a defect, not a taste question. Then `spacing.offScale`
+   and the colour counts. Every fix is the same fix, which is to use the token. Then
+   `proto-lint` for the static half.
 
-**Scope the census to what you built.** Run `ui-audit.js` with `window.__uiAuditRoot =
-'#prototype-content'` set first, or its numbers describe the shell, not the prototype. The
-shell's own known conflict — `--text-muted` on `--bg-strong` measures 4.07:1 against a 4.5:1
-target — is a design-system finding recorded in SHELL-NOTES, not something to fix in a
-prototype (Rule 0 in design-pass.md: report the conflict, leave the token alone). The same rule
-covers refactoring-ui's "25% type jumps" against the MDS type scale (14/16/20/24/28/32/40px):
-the token set wins, the disagreement gets reported. The census's `typography.offMdsScale` and
-`typography.nonMdsFaces` are the two numbers to read first — text off the scale or in a face
-other than Noto Sans is a defect on either path, not a taste question.
+`scroll.trapped: true` outranks everything else on the list; content below the fold is
+unreachable and nobody can review the prototype at all until it's fixed.
 
-Only skip conformance if the user says this specific prototype is disposable and won't be looked
-at again — don't make that call unprompted because the shortcut path was used.
+### When to stop
 
-See [design-pass.md](design-pass.md) for the full process: which checks run at which phase, how
-the design system's own tokens override generic advice, and how to run the bundled measurement
-script at [scripts/ui-audit.js](scripts/ui-audit.js) (its `scroll.trapped` field catches the
-unscrollable-page class of bug at runtime).
+The `Fidelity:` field in NOTES records which level ran, so a reviewer knows what they're looking
+at.
+
+- **`wireframe`** — none of the above runs. There is no palette to conform to, and contrast is
+  explicitly out of scope: a wireframe is for structure and flow, not for WCAG. Check one thing
+  instead: every state the prototype is about must still be distinguishable in grey (see
+  "Wireframe mode" under "What a prototype file looks like"). If two states look identical, the
+  prototype can't answer its question.
+- **`rough`** — the measure-and-fix above. The default on every non-wireframe build, no asking
+  needed, because it makes the prototype more on-system without making it prettier.
+- **`considered`** — rough plus two named checks, and only when a decision rides on the review.
+  Ask first. Clutter (`refactoring-ui-skills:06-eliminate-visual-clutter`) and empty states
+  (`07-design-empty-states`). Neither is polish: clutter removal makes the hierarchy readable,
+  and a missing zero state is a hole, not restraint. A reviewer who can't read the hierarchy
+  judges the noise instead of the design. The trigger is the kind of review, not who's in it: a
+  critique session stays `rough`, a go/no-go on a direction gets `considered`.
+
+Why it stops there: NN/g's aesthetic-usability finding is that a polished prototype makes
+reviewers comment on the visuals instead of the problem it was built to expose, and hi-fi reads
+as "done". A rough prototype that answers its question beats a polished one that gets admired.
+
+### The design system wins, and the disagreement is the output
+
+Where a measurement disagrees with an MDS token, the token stays and the disagreement gets
+reported. The shell's own known conflict is the example: `--text-muted` on `--bg-strong` measures
+4.07:1 against a 4.5:1 target. That's recorded in SHELL-NOTES as a finding about the design
+system, not fixed in a prototype. These findings are often the most valuable thing a prototype
+produces, so surface them rather than quietly working around them.
+
+Only skip the pass entirely if the user says this specific prototype is disposable and won't be
+looked at again. Don't make that call unprompted because the shortcut path was used.
+
+If `refactoring-ui-skills` is installed, [design-pass.md](design-pass.md) has the full ten-check
+process for the considered path. It is optional: six of the ten are conformance questions the
+census answers better, because the census measures where the book generalises. Never block a
+prototype on a missing plugin.
 
 ---
 
@@ -364,7 +443,8 @@ placed there in Step 0) and is renamed `PROTOTYPE-<thing>.html`. One self-contai
 build step — it has to open from a file, serve as a static page, and survive being emailed.
 
 The template ships the scaffolding below with **fixed ids** — `#devPanel`, `#devMin`, `#guidesBtn`,
-`#annotBtn`, `#measureBar`, `#debug` — so every prototype's scaffolding is the same scaffolding.
+`#annotBtn`, `#wireframeBtn`, `#measureBar`, `#debug` — so every prototype's scaffolding is the
+same scaffolding.
 Don't rename them and don't re-invent them; older prototypes did (`.prov`, `devSwitch`, three id
 conventions) and it's why nothing was ever consistent. Carry these forward into whatever gets built:
 
@@ -389,7 +469,7 @@ conventions) and it's why nothing was ever consistent. Carry these forward into 
   from the template — the shell's decisions and traps — and is never edited in a prototype; if it
   needs changing, change the template. `NOTES` is the prototype's own, with four fixed fields:
   `Fidelity:`, `Figma nodes:`, `Decisions:`, `Traps:`. Build decisions for whoever picks the file
-  up next, nothing else. Keep it short; the lint warns past 120 lines, which is what stops a NOTES
+  up next, nothing else. `Fidelity:` is `wireframe`, `rough` or `considered`. Keep it short; the lint warns past 120 lines, which is what stops a NOTES
   block growing to 900 lines by inheriting the previous prototype's (it happened). **No research
   intent anywhere in the file**: not the question, not what was concluded, not who it was tested
   with. The lint fails any file carrying a `Question:` or `Answer:` line. Those live in the
@@ -402,6 +482,17 @@ conventions) and it's why nothing was ever consistent. Carry these forward into 
   the file declares. The export refuses to run if that meta is missing or still says
   "prototype". Anything you add to the file that is scaffolding rather than screen goes inside a
   dev region, or it ships to participants.
+- **Wireframe mode ships in the template.** `body.wireframe` redefines every colour token to a
+  grey from the MDS grey ramp (`$mds-color-gray-100` to `900`) and touches nothing else, so
+  layout, spacing, type and every interaction stay exactly as they are. A wireframe and an
+  on-system build are therefore the same file, and the State panel's Wireframe button flips
+  between them. Two rules when you build in wireframe:
+  1. **Use the tokens, not greys of your own.** New UI still uses `var(--primary)` and friends;
+     the wireframe block is what turns them grey. A hardcoded grey defeats the toggle.
+  2. **No state may be distinguishable by colour alone.** The current row, activity purposes and
+     feedback states all collapse into each other in grey unless they also carry weight, a
+     border or an inset bar. Give every state a non-colour signal. This is the one substantive
+     thing wireframe mode asks of you, and it's the reason the toggle is worth having.
 - **MDS inherited, not bolted on.** `:root` is an alias layer over the Moodle Design System:
   short names (`--sp-md`, `--text-muted`, `--fs-sm`, `--danger`) each carrying the `$mds-*` name
   they stand for. `--font-family` is Noto Sans and the body uses it; `--font-code` is the MDS
@@ -422,11 +513,15 @@ them shouldn't need explaining either.
 
 Four things happen here in both tiers, and the last is a gate, not a suggestion:
 
-1. **Ask who opens the file.** Internal reviewers, usability-test participants, or both. This is
-   the one question that changes what gets shipped: reviewers get the file as built (State panel,
-   annotations, guides); participants get a clean export that reveals nothing about what's being
-   studied. If you can't ask, ship the reviewer file only and say so; never guess "participants"
-   and never send a participant the reviewer file.
+1. **Ask who opens the file, with `AskUserQuestion`. Always.** Not inferred, not skipped because
+   the answer looks obvious from the conversation. Header "Audience", multi-select:
+   - *Internal reviewers* — the file as built: State panel, annotations, guides.
+   - *Usability-test participants* — a clean `-test.html` with all of that removed, revealing
+     nothing about what's being studied.
+
+   Reviewers is the first option and the stated default. On a genuinely non-interactive run, ship
+   the reviewer file only and say in the report that you could not ask. Never guess
+   "participants", and never hand a participant the reviewer file.
 2. **For reviewers, ask the annotations question**: show on load, or hidden until they click
    Annotations? Set DEFAULTS accordingly (`setAnnots(true)` for on-load, inside the dev block).
    If you can't ask, default to hidden-until-clicked and say so; on-load is right when the
