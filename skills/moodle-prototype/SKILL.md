@@ -453,6 +453,21 @@ conventions) and it's why nothing was ever consistent. Carry these forward into 
   the keyboard). Add `data-annot="the callout"` (and optionally `data-annot-side`) to any element
   and the layer builds the rest. One question to ask, at Step 6 not here: should they show on load,
   or stay hidden until the reviewer clicks Annotations? Don't decide it silently.
+  The layer places the cards: each target gets a numbered pin, `data-annot-side` is only the
+  *preferred* side, and a card that can't find room without covering another card folds into its
+  pin (it opens on hover, focus or click). Don't fight it with extra wrappers or offsets. What it
+  can't do is make room that isn't there, so write for it:
+  - **Say what to try and where, in 30 words or fewer.** The reasoning goes in NOTES. A long card
+    covers the thing it's explaining. (proto-lint WARNs on more than 30 words.)
+  - **Around five per state.** More than that, cut some or spread them across states. (Lint WARNs
+    at more than 8 in the file.)
+  - **Annotate the control, not the region.** Ring the drag handle, the chip, the toggle, not the
+    whole table or column. A ring round half the screen leaves the card nowhere to go.
+  - **Pick the side with empty space**, usually toward the page margin, not into the next
+    component.
+  - **Look at it before handing over.** Turn Annotations on at desktop width and at the narrowest
+    width the prototype supports. Check that no card covers what it points at, and that none has
+    folded unless it had to.
 - **A State panel** that switches between the states the prototype is about. It ships minimised
   by default (a small pill, not an open panel) — the bundled template already starts this way; if
   building a screen from scratch, match that default rather than leaving the panel open. A

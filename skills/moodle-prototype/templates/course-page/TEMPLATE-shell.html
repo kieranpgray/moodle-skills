@@ -641,22 +641,38 @@
      explain itself ("drag this edge", "this is the current activity"). Off on
      load; toggled by #annotBtn or by `body.annot-on`. To annotate an element,
      give it data-annot="the callout text" and (optionally) data-annot-side
-     = "left|right|top|bottom". The layer positions itself from the element's
-     live geometry, so it survives resize and drawer animation.
+     = "left|right|top|bottom" as the preferred side. The layer positions itself
+     from the element's live geometry, so it survives resize and drawer
+     animation, and picks a spot that doesn't cover another card (see
+     placeAnnots). Each target gets a numbered pin that matches its card.
      Every prototype used to re-invent this (.anno-layer, .prov, .anno-card…),
      each slightly differently. Now it ships. Uses design tokens, not the dev
-     palette, because reviewers actually see it. */
+     palette, because reviewers actually see it.
+     Layering is by z-index, never DOM order: rings < leader lines < pins <
+     cards < an opened (peeked) card. A ring's dashes never cross a card. */
   .annot-layer{ position:fixed; inset:0; z-index:70; pointer-events:none; display:none; }
   body.annot-on .annot-layer{ display:block; }
   .annot-ring{
-    position:fixed; border:2px dashed var(--primary); border-radius:var(--r-md);
+    position:fixed; z-index:1; border:2px dashed var(--primary); border-radius:var(--r-md);
     box-shadow:0 0 0 3px var(--hover-tint); pointer-events:none;
   }
+  .annot-lead{
+    position:fixed; z-index:2; height:0; border-top:2px solid var(--primary);
+    transform-origin:0 0; pointer-events:none;
+  }
+  .annot-pin{
+    position:fixed; z-index:3; width:20px; height:20px; padding:0; border-radius:var(--r-pill);
+    border:2px solid var(--surface); background:var(--primary); color:var(--on-primary);
+    font-family:inherit; font-size:12px; font-weight:700; line-height:16px; text-align:center; cursor:pointer; pointer-events:auto;
+    box-shadow:var(--shadow-drawer);
+  }
+  .annot-pin.is-folded{ outline:2px dashed var(--primary); outline-offset:2px; }
   .annot-card{
-    position:fixed; max-width:240px; background:var(--primary); color:var(--on-primary);
-    border-radius:var(--r-md); padding:8px 10px 9px; font-size:12px; line-height:1.45;
+    position:fixed; z-index:4; width:max-content; max-width:240px; background:var(--primary); color:var(--on-primary);
+    border-radius:var(--r-md); padding:8px 24px 8px 12px; font-size:12px; line-height:1.45;
     pointer-events:auto; box-shadow:var(--shadow-drawer);
   }
+  .annot-card.is-peek{ z-index:5; }
   .annot-card b{ display:block; font-size:12px; margin-bottom:2px; }
   .annot-card .annot-x{
     position:absolute; top:4px; right:6px; border:none; background:none;
@@ -1289,41 +1305,175 @@
   });
 
   /* ---- annotations: callouts built from data-annot attributes ----
-     Positions track the target's live rect on every frame while on, so they
-     follow drawer animation and resize. Each card has its own dismiss; the
-     Annotations button re-shows all. Off on load — set in DEFAULTS if a
-     reviewer should land with them showing. */
+     Each annotated element gets a dashed ring, a numbered pin on the ring's
+     corner, and a card carrying the same number. Everything is re-laid-out
+     every frame while on, so it follows drawer animation, scroll and resize.
+
+     Placement is a search, not a formula. data-annot-side is the preferred
+     side; the layer also tries the other three sides (start/centre/end along
+     each edge, plus spots just clear of any card already in the way) and
+     keeps the cheapest. Covering another card or pin costs the most, then
+     covering its own target, then hiding other annotated targets (by the share
+     of each one hidden, so a big region is cheap to clip), then hiding
+     ordinary headings and controls, then distance and leaving the preferred
+     side. Cards are placed in number order, so card 1
+     wins a contested spot. A small bonus for last frame's spot stops cards
+     flickering between two near-equal options while things move.
+
+     If even the best spot would cover another card, or mostly hide its own
+     target, the card folds into its pin (dashed outline) and opens on hover,
+     focus or click. A card that ends up away from its ring gets a leader line.
+
+     Each card has its own dismiss; the Annotations button re-shows all. Off on
+     load — set in DEFAULTS if a reviewer should land with them showing. */
   var annotLayer = document.getElementById("annotLayer");
   var annotBtn = document.getElementById("annotBtn");
   var annots = [];
+  var ANNOT_GAP = 14, ANNOT_EDGE = 8, ANNOT_PIN = 20;
+  // Page content a card should prefer not to sit on. Re-read a few times a
+  // second, not every frame — it's the one query that walks the whole page.
+  var ANNOT_AVOID = "h1,h2,h3,h4,a,button,input,select,textarea,label,img,[role=button],[role=switch],[role=tab]";
+  var annotAvoid = [], annotAvoidAt = 0;
+  function readAnnotAvoid(vw, vh){
+    annotAvoid = [];
+    document.querySelectorAll(ANNOT_AVOID).forEach(function(e){
+      if(e.closest(".annot-layer, .devpanel, .debug, .measure-bar")) return;
+      var r = e.getBoundingClientRect();
+      if(r.width < 1 || r.height < 1 || r.bottom < 0 || r.top > vh || r.right < 0 || r.left > vw) return;
+      if(r.width * r.height > vw * vh / 4) return;   // a wrapper, not a thing
+      annotAvoid.push({ l: r.left, t: r.top, r: r.right, b: r.bottom });
+    });
+    annotAvoidAt = Date.now();
+  }
+  function annotEl(tag, cls){ var e = document.createElement(tag); e.className = cls; return e; }
   function buildAnnots(){
     annotLayer.innerHTML = ""; annots = [];
     document.querySelectorAll("[data-annot]").forEach(function(el, i){
-      var ring = document.createElement("div"); ring.className = "annot-ring";
-      var card = document.createElement("div"); card.className = "annot-card";
-      card.innerHTML = "<b>" + (i + 1) + "</b>" + el.getAttribute("data-annot") +
-        '<button class="annot-x" aria-label="Dismiss this annotation">&times;</button>';
-      card.querySelector(".annot-x").addEventListener("click", function(){ ring.style.display = card.style.display = "none"; });
-      annotLayer.appendChild(ring); annotLayer.appendChild(card);
-      annots.push({ el: el, ring: ring, card: card, side: el.getAttribute("data-annot-side") || "right" });
+      var n = i + 1;
+      var a = { el: el, n: n, side: el.getAttribute("data-annot-side") || "right",
+                open: false, hover: false, hoverTill: 0, dismissed: false, prev: null, w: 0, h: 0 };
+      a.ring = annotEl("div", "annot-ring");
+      a.lead = annotEl("div", "annot-lead");
+      a.pin = annotEl("button", "annot-pin"); a.pin.type = "button"; a.pin.textContent = n;
+      a.pin.setAttribute("aria-label", "Annotation " + n);
+      a.card = annotEl("div", "annot-card"); a.card.id = "annotCard" + n; a.card.setAttribute("role", "note");
+      a.card.innerHTML = "<b>" + n + "</b>" + el.getAttribute("data-annot") +
+        '<button class="annot-x" aria-label="Dismiss annotation ' + n + '">&times;</button>';
+      a.pin.setAttribute("aria-controls", a.card.id);
+      a.card.querySelector(".annot-x").addEventListener("click", function(){ a.dismissed = true; placeAnnots(); });
+      a.pin.addEventListener("click", function(){ a.open = !a.open; placeAnnots(); });
+      [a.pin, a.card].forEach(function(t){
+        t.addEventListener("mouseenter", function(){ a.hover = true; });
+        // a short grace so the card survives the mouse crossing the gap from pin to card
+        t.addEventListener("mouseleave", function(){ a.hover = false; a.hoverTill = Date.now() + 300; });
+      });
+      a.pin.addEventListener("focus", function(){ a.hover = true; });
+      a.pin.addEventListener("blur", function(){ a.hover = false; });
+      annotLayer.appendChild(a.ring); annotLayer.appendChild(a.lead);
+      annotLayer.appendChild(a.pin); annotLayer.appendChild(a.card);
+      annots.push(a);
     });
+    measureAnnots();
+  }
+  // Card sizes are read once (and on resize), never inside the per-frame loop.
+  function measureAnnots(){
+    annots.forEach(function(a){ a.card.style.display = ""; a.card.style.left = "0px"; a.card.style.top = "0px"; });
+    annots.forEach(function(a){ a.w = a.card.offsetWidth; a.h = a.card.offsetHeight; });
+  }
+  function annotBox(l, t, w, h){ return { l: l, t: t, r: l + w, b: t + h }; }
+  function annotArea(p){ return Math.max(1, (p.r - p.l) * (p.b - p.t)); }
+  function annotOverlap(p, q){
+    var w = Math.min(p.r, q.r) - Math.max(p.l, q.l), h = Math.min(p.b, q.b) - Math.max(p.t, q.t);
+    return w > 0 && h > 0 ? w * h : 0;
+  }
+  function annotSpots(a, ring, placed){
+    var g = ANNOT_GAP, w = a.w, h = a.h, out = [];
+    [ring.t, ring.t + (ring.b - ring.t - h) / 2, ring.b - h].forEach(function(y, k){
+      out.push({ side: "right", k: k, l: ring.r + g, t: y });
+      out.push({ side: "left",  k: k, l: ring.l - w - g, t: y });
+    });
+    [ring.l, ring.l + (ring.r - ring.l - w) / 2, ring.r - w].forEach(function(x, k){
+      out.push({ side: "top",    k: k, l: x, t: ring.t - h - g });
+      out.push({ side: "bottom", k: k, l: x, t: ring.b + g });
+    });
+    // spots just clear of a placed card that one of the above would hit
+    var extra = [];
+    out.forEach(function(c){
+      var cb = annotBox(c.l, c.t, w, h);
+      placed.forEach(function(p, j){
+        if(!annotOverlap(cb, p)) return;
+        if(c.side === "left" || c.side === "right"){
+          extra.push({ side: c.side, k: "b" + j, l: c.l, t: p.b + ANNOT_EDGE });
+          extra.push({ side: c.side, k: "a" + j, l: c.l, t: p.t - h - ANNOT_EDGE });
+        } else {
+          extra.push({ side: c.side, k: "r" + j, l: p.r + ANNOT_EDGE, t: c.t });
+          extra.push({ side: c.side, k: "l" + j, l: p.l - w - ANNOT_EDGE, t: c.t });
+        }
+      });
+    });
+    return out.concat(extra);
   }
   function placeAnnots(){
-    var vw = window.innerWidth, vh = window.innerHeight;
+    var vw = window.innerWidth, vh = window.innerHeight, E = ANNOT_EDGE;
+    function clampX(x, w){ return Math.max(E, Math.min(x, vw - w - E)); }
+    function clampY(y, h){ return Math.max(E, Math.min(y, vh - h - E)); }
+    function show(el, on){ el.style.display = on ? "" : "none"; }
+    // Pass 1 — read: which targets are on screen, rings and pins.
+    if(Date.now() - annotAvoidAt > 300) readAnnotAvoid(vw, vh);
+    var live = [];
     annots.forEach(function(a){
-      if(a.ring.style.display === "none") return;
       var r = a.el.getBoundingClientRect();
-      if(r.width < 1 || r.bottom < 0 || r.top > vh){ a.ring.style.visibility = a.card.style.visibility = "hidden"; return; }
-      a.ring.style.visibility = a.card.style.visibility = "";
-      a.ring.style.left = (r.left - 4) + "px"; a.ring.style.top = (r.top - 4) + "px";
-      a.ring.style.width = (r.width + 8) + "px"; a.ring.style.height = (r.height + 8) + "px";
-      var cw = a.card.offsetWidth, ch = a.card.offsetHeight, cl, ct;
-      if(a.side === "left"){ cl = r.left - cw - 12; ct = r.top; }
-      else if(a.side === "top"){ cl = r.left; ct = r.top - ch - 12; }
-      else if(a.side === "bottom"){ cl = r.left; ct = r.bottom + 12; }
-      else { cl = r.right + 12; ct = r.top; }
-      cl = Math.max(8, Math.min(cl, vw - cw - 8)); ct = Math.max(8, Math.min(ct, vh - ch - 8));
-      a.card.style.left = cl + "px"; a.card.style.top = ct + "px";
+      a.live = !a.dismissed && r.width >= 1 && r.height >= 1 && r.bottom > 0 && r.top < vh && r.right > 0 && r.left < vw;
+      if(!a.live) return;
+      a.ringBox = { l: r.left - 4, t: r.top - 4, r: r.right + 4, b: r.bottom + 4 };
+      a.pinBox = annotBox(clampX(a.ringBox.l - ANNOT_PIN / 2, ANNOT_PIN), clampY(a.ringBox.t - ANNOT_PIN / 2, ANNOT_PIN), ANNOT_PIN, ANNOT_PIN);
+      live.push(a);
+    });
+    // Pass 2 — decide: cards in number order, each avoiding what's already placed.
+    var placed = live.map(function(a){ return a.pinBox; });
+    live.forEach(function(a){
+      var best = null;
+      annotSpots(a, a.ringBox, placed).forEach(function(c){
+        var cb = annotBox(clampX(c.l, a.w), clampY(c.t, a.h), a.w, a.h);
+        var hitCard = 0, hitOther = 0, hitPage = 0;
+        placed.forEach(function(p){ if(p !== a.pinBox) hitCard += annotOverlap(cb, p); });
+        var hitOwn = annotOverlap(cb, a.ringBox) + annotOverlap(cb, a.pinBox);
+        // other targets cost by the share of them hidden: covering a small button
+        // outright is bad, clipping the corner of a big region barely matters
+        live.forEach(function(o){ if(o !== a) hitOther += annotOverlap(cb, o.ringBox) / annotArea(o.ringBox) * a.w * a.h; });
+        annotAvoid.forEach(function(o){ hitPage += annotOverlap(cb, o) / annotArea(o); });
+        var dx = Math.max(a.ringBox.l - cb.r, 0, cb.l - a.ringBox.r), dy = Math.max(a.ringBox.t - cb.b, 0, cb.t - a.ringBox.b);
+        var key = c.side + c.k;
+        var s = hitCard * 40 + hitOwn * 4 + hitOther * 2 + hitPage * 3000 + Math.sqrt(dx * dx + dy * dy) * 12 +
+                (c.side === a.side ? 0 : 1500) + (c.k === 0 ? 0 : 300) - (key === a.prev ? 800 : 0);
+        if(!best || s < best.s) best = { s: s, box: cb, key: key, hitCard: hitCard, hitOwn: hitOwn };
+      });
+      a.prev = best.key; a.box = best.box;
+      a.folded = best.hitCard > 0 || best.hitOwn > a.w * a.h * 0.5;
+      if(!a.folded) placed.push(best.box);
+    });
+    // Pass 3 — write.
+    annots.forEach(function(a){
+      if(!a.live){ show(a.ring, false); show(a.pin, false); show(a.card, false); show(a.lead, false); return; }
+      var rb = a.ringBox, cb = a.box, cardOn = !a.folded || a.open || a.hover || Date.now() < a.hoverTill;
+      show(a.ring, true); show(a.pin, true);
+      a.ring.style.left = rb.l + "px"; a.ring.style.top = rb.t + "px";
+      a.ring.style.width = (rb.r - rb.l) + "px"; a.ring.style.height = (rb.b - rb.t) + "px";
+      a.pin.style.left = a.pinBox.l + "px"; a.pin.style.top = a.pinBox.t + "px";
+      a.pin.classList.toggle("is-folded", a.folded);
+      a.pin.setAttribute("aria-expanded", cardOn ? "true" : "false");
+      show(a.card, cardOn); a.card.classList.toggle("is-peek", a.folded && cardOn);
+      a.card.style.left = cb.l + "px"; a.card.style.top = cb.t + "px";
+      // leader line: nearest point on the ring to the card, back to the card's edge
+      var cx = (cb.l + cb.r) / 2, cy = (cb.t + cb.b) / 2;
+      var tx = Math.max(rb.l, Math.min(cx, rb.r)), ty = Math.max(rb.t, Math.min(cy, rb.b));
+      var sx = Math.max(cb.l, Math.min(tx, cb.r)), sy = Math.max(cb.t, Math.min(ty, cb.b));
+      var len = Math.sqrt((tx - sx) * (tx - sx) + (ty - sy) * (ty - sy));
+      show(a.lead, cardOn && len > 20);
+      if(cardOn && len > 20){
+        a.lead.style.left = sx + "px"; a.lead.style.top = sy + "px"; a.lead.style.width = len + "px";
+        a.lead.style.transform = "rotate(" + Math.atan2(ty - sy, tx - sx) + "rad)";
+      }
     });
   }
   var annotRAF = null;
@@ -1334,6 +1484,7 @@
     else if(annotRAF){ cancelAnimationFrame(annotRAF); annotRAF = null; }
   }
   annotBtn.addEventListener("click", function(){ setAnnots(!body.classList.contains("annot-on")); });
+  window.addEventListener("resize", function(){ if(body.classList.contains("annot-on")){ measureAnnots(); placeAnnots(); } });
 
   /* ---- wireframe toggle: greyscale on, colour off, same layout either way ---- */
   var wireframeBtn = document.getElementById("wireframeBtn");

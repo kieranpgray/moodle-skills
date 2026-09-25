@@ -371,6 +371,20 @@ function lint(file, opts) {
   if (isClean) { /* annotations are meant to be gone */ }
   else if (/\bannot-on\b/.test(bodyCls)) add("annotations-off-on-load", "WARN", "annotations are ON in the static body class — decide this in DEFAULTS, not markup");
   else add("annotations-off-on-load", "PASS", "annotations off on load");
+  // Annotation budget. The layer keeps cards off each other, but it can't make room that
+  // isn't there: long callouts and too many of them are what bury the screen. The reasoning
+  // belongs in NOTES; a callout says what to try and where.
+  if (!isClean) {
+    const ann = [...html.matchAll(/\bdata-annot="([^"]*)"/g)];
+    const words = (t) => t.replace(/&[a-z#0-9]+;/gi, " ").trim().split(/\s+/).filter(Boolean).length;
+    const long = ann.filter(m => words(m[1]) > 30);
+    if (long.length) add("annotation-length", "WARN", `${long.length} callout${long.length === 1 ? "" : "s"} over 30 words — move the reasoning to NOTES, keep what to try and where`, long.map(m => ({ line: lineOf(html, m.index), snippet: `${words(m[1])} words` })));
+    else if (ann.length) add("annotation-length", "PASS", "callouts 30 words or fewer");
+    if (ann.length > 8) add("annotation-count", "WARN", `${ann.length} annotations — more than ~5 on screen at once crowds out the thing under review; cut or split across states`);
+    else if (ann.length) add("annotation-count", "PASS", `${ann.length} annotation${ann.length === 1 ? "" : "s"}`);
+    const badSide = [...html.matchAll(/\bdata-annot-side="([^"]*)"/g)].filter(m => !/^(left|right|top|bottom)$/.test(m[1]));
+    if (badSide.length) add("annotation-side", "WARN", "data-annot-side must be left, right, top or bottom", badSide.map(m => ({ line: lineOf(html, m.index), snippet: m[1] })));
+  }
   const guideCount = (html.match(/class="guide\b/g) || []).length;
   if (isClean) { /* guides are meant to be gone */ }
   else if (guideCount >= 8 && /id="measureBar"/.test(html)) add("guides-present", "PASS", "alignment guides + measure bar present"); else add("guides-present", "WARN", `alignment guides incomplete (${guideCount}/8 guides${/id="measureBar"/.test(html) ? "" : ", no measureBar"})`);
