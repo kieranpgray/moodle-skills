@@ -315,6 +315,8 @@ outside the team and check:
 - **Budgets:** is any section over its word budget?
 - **Words:** any banned word, pattern to cut, or unexplained acronym?
 - **Leftovers:** any placeholder, empty table or guidance text?
+- **Links:** any bare URL showing as text? Make it an inline smart link,
+  or link text inside a sentence (see "Links" in `confluence-elements.md`).
 - **Emoji:** any Atlassian-only emoji that shows as text (such as
   `:rocket:`)? Swap it for the plain character.
 

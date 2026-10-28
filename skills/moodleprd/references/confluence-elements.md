@@ -74,6 +74,28 @@ The same in both formats:
 <ul><li><p>First point</p></li></ul>
 ```
 
+## Links
+
+Never show a bare URL on the page. Every link is either an inline smart link
+or readable link text. The same markup works in both formats.
+
+**Inline smart link.** Use it for any link that stands on its own: Overview
+fields (product idea, related links), Reference files, sources in a table,
+Jira tickets, Figma files, prototypes and other Confluence pages. Confluence
+shows it as a compact chip with the page's icon and live title, so do not
+write the title next to it.
+
+```html
+<a href="https://moodle.atlassian.net/browse/MDL-90112" data-card-appearance="inline">https://moodle.atlassian.net/browse/MDL-90112</a>
+```
+
+**Link text.** Use it when the link sits inside a sentence, so the sentence
+still reads naturally: `See the <a href="URL">usability findings</a>.` The
+text says what the reader will find, never "here" or "this link".
+
+When editing an existing page, convert any bare URL you touch in the section
+you are rewriting. Leave links in other sections alone.
+
 ## Table
 
 Header row in bold, then one row per item.
