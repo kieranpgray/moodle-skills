@@ -86,9 +86,9 @@ Decide the mode before asking anything.
 
 Do this before asking any questions about the content.
 
-1. **Search.** In Confluence, search for pages whose title contains "PRD" and
-   the initiative's keywords. Include personal spaces: live PRDs often sit in
-   them. Then check the working folder for local PRD files. If the user gave a
+1. **Search.** In Confluence, search for pages labelled `prd` or whose title
+   contains "PRD", together with the initiative's keywords. Include personal
+   spaces: live PRDs often sit in them. Then check the working folder for local PRD files. If the user gave a
    link, use that page and skip the search.
 2. **Ask, never pick.** Show the candidates with their owner and last-edited
    date, and ask: "Is it one of these, or is this a new PRD?" Leave out pages
@@ -120,6 +120,10 @@ Do this before asking any questions about the content.
    section at a time" in `confluence-elements.md`. Warn the user before
    rewriting a section that has open inline comments, because rewriting can
    detach them.
+9. **Label it.** Before the first edit you make to an existing PRD, check its
+   labels and add `prd` if it is missing (see "Label every PRD page" in
+   Step 1). Do this on every edit or update session, not only for pages the
+   skill created. In Review mode you are not editing, so leave labels alone.
 
 A page label such as `prd-stage-solution` can hint at where the PM left off.
 Treat it as a hint only: labels go stale, so the gate tests decide.
@@ -143,8 +147,10 @@ If there is no existing PRD, go to Step 1.
 4. **Create the page** once The Problem passes its gate (Step 3). Until then
    there is nothing worth publishing. Use the narrow page width, with content
    straight in the page body and no single-column layout wrappers (see "Page
-   width and layouts" in `confluence-elements.md`). From then on, publish each
-   section when the user approves it.
+   width and layouts" in `confluence-elements.md`). **Label every PRD page**
+   `prd` straight after creating it (`addLabelsToConfluenceContent` with the
+   official connector, `confluence_add_label` with the community one). From
+   then on, publish each section when the user approves it.
 5. **Keep a local backup.** After every publish, save the whole PRD as
    markdown in the working folder as `PRD_[Plain_Name].md`, with the page link
    at the top. Tell the user where it is once. Never treat it as the master.
