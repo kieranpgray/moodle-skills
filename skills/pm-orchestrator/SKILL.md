@@ -236,29 +236,18 @@ Incorporate any feedback by updating `disco-[feature-slug].md`, then proceed.
 Invoke the `moodleprd` skill in orchestrated mode. Pass the initiative name and
 the discovery handoff summary as context. Moodleprd will:
 
-1. Look for the PRD template in the current project workspace (under
-   `docs/prd/PRD_Template.md` or the workspace root)
-2. Read any workspace context files that exist (`context/projects.md`,
-   `decision-log.md`, `context/people.md`)
-3. Search Confluence, Google Drive, and Granola for additional PRD-relevant
-   context
-4. Draft the PRD using the six mandatory section headings, verbatim, with
-   Moodle-specific conventions: certainty labelling, problem basis statement,
-   non-goals table, honest metric baselines, blocking and non-blocking open
-   questions
-5. Save to `prd-[feature-slug].md` and to the current project workspace under
-   `docs/prd/PRD_[InitiativeName].md`
+1. Check Confluence for an existing PRD on the initiative and ask the user
+   whether to continue it
+2. Use the discovery synthesis to answer The Problem and The Hypothesis, and
+   show them to the user for approval rather than re-asking
+3. Ask for scope, measures and impacts one section at a time, testing each
+   against its gate
+4. Publish each approved section to a Confluence draft page, and keep a local
+   markdown backup as `PRD_[Plain_Name].md`
 
 Read `disco-[feature-slug].md` if moodleprd needs detail beyond the handoff
-summary.
-
-⚠️ **Next step required before this phase will work cleanly:** moodleprd does not
-yet have explicit orchestrated mode detection. Until it is updated (following
-moodledisco's mode detection pattern), it will ask setup questions that duplicate
-prior discovery work. The update needed is: skip Step 1 setup questions and
-Step 4 source gathering for sections already covered by the moodledisco synthesis
-doc, when an initiative name and discovery handoff are already in context. This
-is a one-time update to `moodleprd/SKILL.md`.
+summary. Save a copy of the finished PRD as `prd-[feature-slug].md` for the
+later phases.
 
 Run `pm-execution:pre-mortem` against the completed PRD. Save the full pre-mortem
 to `premortem-[feature-slug].md`.
@@ -282,9 +271,9 @@ and tickets?"
 **Wait for explicit approval before proceeding.** Incorporate any edits to the PRD
 file before moving on.
 
-If the user wants the PRD pushed to Confluence, do that now. Ask the user for
-the Confluence destination: which space to publish to, and optionally which
-parent page to nest under. Create the page at the specified location.
+The PRD is already in Confluence: moodleprd publishes each section as it is
+approved. Apply any edits from this review to the Confluence page one section
+at a time, then update `prd-[feature-slug].md`.
 
 **Checkpoint 2 handoff — after approval, carry forward only:**
 > "Approved PRD: `prd-[feature-slug].md`. Scope confirmed: [feature name, v1
