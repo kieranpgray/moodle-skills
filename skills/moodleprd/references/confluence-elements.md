@@ -2,10 +2,14 @@
 
 How to write each part of a PRD page. Every element is given in two formats:
 
-- **ADF** (Atlassian Document Format, JSON): for the official Atlassian
-  connector.
-- **Storage** (Confluence's XML format): for connectors that accept storage
-  format, such as the community `mcp-atlassian` server.
+- **HTML** for the official Atlassian connector (`createConfluencePage`,
+  `updateConfluencePage` with `contentFormat: "html"`). Before the first write
+  in a session, call its `getContentFormatGuide` tool for the page tool you are
+  using, and follow it. HTML keeps inline comments and existing IDs when a page
+  is read and written back. Never send storage XML (`<ac:structured-macro>`)
+  to this connector: it shows as raw text.
+- **Storage** (Confluence's XML format) for connectors that accept it, such as
+  the community `mcp-atlassian` server (`content_format: "storage"`).
 
 Both produce the same page. The section order, headings, emoji and panel
 colours are in `prd-template.md`; this file only says how to write them.
@@ -13,39 +17,28 @@ colours are in `prd-template.md`; this file only says how to write them.
 Rules for both formats:
 
 - Emoji go in the heading text as plain characters (🧭, not `:compass:`).
-  Atlassian's own emoji show as text like `:direct_hit:` in some views.
+  Atlassian's own emoji (IDs starting `atlassian-`) show as text like
+  `:rocket:` in some views.
 - Never send guidance, budgets or gates. They are instructions for the writer.
 - Never send placeholders on a real PRD. Placeholders belong to the blank
   template only.
-- Tables stay at the page's reading width (760px, layout `default`).
+- Tables stay at the page's reading width (760px). Never put a table inside a
+  panel.
 - Create pages with the default (narrow) page width.
-
----
-
-## Page wrapper
-
-**ADF.** The page body is one document. Every element below goes in `content`,
-in order.
-
-```json
-{"type": "doc", "version": 1, "content": []}
-```
-
-**Storage.** Elements are concatenated with no wrapper and no layout sections.
+- Mention a person only with their real Atlassian account ID. Never invent
+  one: write their name as plain text instead.
 
 ---
 
 ## Section heading in a panel
 
-Every H2 except Overview. Colour and emoji per section are in `prd-template.md`.
-The panel holds the heading only; the section's content follows the panel.
+Every H2 except Overview. The panel holds the heading only; the section's
+content follows the panel.
 
-**ADF**
+**HTML**
 
-```json
-{"type": "panel", "attrs": {"panelType": "custom", "panelColor": "#E6FCFF"},
- "content": [{"type": "heading", "attrs": {"level": 2},
-              "content": [{"type": "text", "text": "🔎 The Problem"}]}]}
+```html
+<div data-type="panel-custom" data-color="#E6FCFF"><h2>🔎 The Problem</h2></div>
 ```
 
 **Storage**
@@ -56,50 +49,24 @@ The panel holds the heading only; the section's content follows the panel.
 
 ## Plain heading
 
-The Overview H2, and every H3 sub-heading.
+The Overview H2, and every H3 sub-heading. The same in both formats:
 
-**ADF**
-
-```json
-{"type": "heading", "attrs": {"level": 3},
- "content": [{"type": "text", "text": "❓ Open questions"}]}
-```
-
-**Storage**
-
-```xml
+```html
 <h3>❓ Open questions</h3>
 ```
 
 ## Divider
 
-Between sections: after the Overview table and after each section's content,
-never inside a section.
+Between sections: after the Overview, and after each section's content. Never
+inside a section.
 
-**ADF:** `{"type": "rule"}`
-
-**Storage:** `<hr />`
+**HTML:** `<hr>` · **Storage:** `<hr />`
 
 ## Paragraph, bold, link and list
 
-**ADF**
+The same in both formats:
 
-```json
-{"type": "paragraph", "content": [
-  {"type": "text", "text": "It repeats My Courses.", "marks": [{"type": "strong"}]},
-  {"type": "text", "text": " See the "},
-  {"type": "text", "text": "research", "marks": [{"type": "link", "attrs": {"href": "https://example.com"}}]},
-  {"type": "text", "text": "."}]}
-```
-
-```json
-{"type": "bulletList", "content": [
-  {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "First point"}]}]}]}
-```
-
-**Storage**
-
-```xml
+```html
 <p><strong>It repeats My Courses.</strong> See the <a href="https://example.com">research</a>.</p>
 <ul><li><p>First point</p></li></ul>
 ```
@@ -108,17 +75,10 @@ never inside a section.
 
 Header row in bold, then one row per item.
 
-**ADF**
+**HTML**
 
-```json
-{"type": "table", "attrs": {"layout": "default", "width": 760},
- "content": [
-  {"type": "tableRow", "content": [
-    {"type": "tableHeader", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Risk", "marks": [{"type": "strong"}]}]}]},
-    {"type": "tableHeader", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Mitigation", "marks": [{"type": "strong"}]}]}]}]},
-  {"type": "tableRow", "content": [
-    {"type": "tableCell", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "A migration bug empties a dashboard"}]}]},
-    {"type": "tableCell", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Test against real dashboards from large sites"}]}]}]}]}
+```html
+<table data-width="760"><thead><tr><th><p><strong>Risk</strong></p></th><th><p><strong>Mitigation</strong></p></th></tr></thead><tbody><tr><td><p>A migration bug empties a dashboard</p></td><td><p>Test against real dashboards from large sites</p></td></tr></tbody></table>
 ```
 
 **Storage**
@@ -129,17 +89,13 @@ Header row in bold, then one row per item.
 
 ## Overview table
 
-Two columns. The label cells are bold and shaded `#F4F5F7`. Rows and their
-values are in `prd-template.md`.
+Two columns, no header row. The label cells are bold and shaded `#F4F5F7`.
+Rows and values are in `prd-template.md`. One row:
 
-**ADF** (one row; repeat for each field)
+**HTML**
 
-```json
-{"type": "tableRow", "content": [
-  {"type": "tableCell", "attrs": {"background": "#f4f5f7", "colwidth": [188]},
-   "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Target release", "marks": [{"type": "strong"}]}]}]},
-  {"type": "tableCell", "attrs": {"colwidth": [572]},
-   "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Moodle LMS 6.0"}]}]}]}
+```html
+<tr><td data-background="#f4f5f7" data-colwidth="188"><p><strong>Target release</strong></p></td><td data-colwidth="572"><p>Moodle LMS 6.0</p></td></tr>
 ```
 
 **Storage**
@@ -150,14 +106,14 @@ values are in `prd-template.md`.
 
 ## Status lozenge
 
-Show only the current status and phase, not every option. Colours: DRAFT grey,
-IN REVIEW yellow, APPROVED green; DEFINITION grey, DISCOVERY purple, DESIGN
+Show only the current status and phase, not every option. DRAFT grey, IN
+REVIEW yellow, APPROVED green; DEFINITION grey, DISCOVERY purple, DESIGN
 yellow, BUILD blue.
 
-**ADF.** Colours are `neutral`, `purple`, `blue`, `red`, `yellow`, `green`.
+**HTML.** Colours are `neutral`, `purple`, `blue`, `red`, `yellow`, `green`.
 
-```json
-{"type": "status", "attrs": {"text": "DRAFT", "color": "neutral", "style": "mixedCase"}}
+```html
+<span data-type="status" data-color="neutral">DRAFT</span>
 ```
 
 **Storage.** Colours are `Grey`, `Purple`, `Blue`, `Red`, `Yellow`, `Green`.
@@ -168,48 +124,24 @@ yellow, BUILD blue.
 
 ## Person
 
-Use a mention when you have the person's Atlassian account ID (from a user
-search). Otherwise write their name as plain text.
-
-**ADF:** `{"type": "mention", "attrs": {"id": "<account id>"}}`
+**HTML:** `<span data-type="mention" data-user-id="<account id>">@Name</span>`
 
 **Storage:** `<ac:link><ri:user ri:account-id="<account id>" /></ac:link>`
 
 ## Gate override line
 
-When the user overrides a gate, put this line directly under the section's
-panel, before any other content in the section.
+When the user overrides a gate, put this directly under the section's panel,
+before the section's other content. The same in both formats:
 
-**ADF**
-
-```json
-{"type": "paragraph", "content": [
-  {"type": "text", "text": "⚠️ Not yet met: ", "marks": [{"type": "strong"}]},
-  {"type": "text", "text": "no evidence that teachers meet this problem."}]}
-```
-
-**Storage**
-
-```xml
+```html
 <p><strong>⚠️ Not yet met: </strong>no evidence that teachers meet this problem.</p>
 ```
 
 ## Quote
 
-Appendix only. Verbatim, with a link to the source.
+Appendix only. Verbatim, with a link to the source. The same in both formats:
 
-**ADF**
-
-```json
-{"type": "blockquote", "content": [{"type": "paragraph", "content": [
-  {"type": "text", "text": "\"I can't find my course.\"", "marks": [{"type": "em"}]},
-  {"type": "text", "text": " Educational technology consultant, "},
-  {"type": "text", "text": "7 Apr 2026", "marks": [{"type": "link", "attrs": {"href": "https://example.com"}}]}]}]}
-```
-
-**Storage**
-
-```xml
+```html
 <blockquote><p><em>"I can't find my course."</em> Educational technology consultant, <a href="https://example.com">7 Apr 2026</a></p></blockquote>
 ```
 
@@ -217,24 +149,28 @@ Appendix only. Verbatim, with a link to the source.
 
 ## Writing one section at a time
 
-A section is everything from its panel (or plain heading) up to the next
-divider.
+A section runs from its panel (or plain heading) to the next divider.
 
 1. Read the live page right before every write, in the format you will write
-   back, and note its version number.
-2. Find the section by its heading text, exactly as in `prd-template.md`.
-3. Replace only the nodes (ADF) or markup (storage) between that heading's
-   panel and the next divider. Leave everything else byte for byte as it was,
-   including IDs, comments markers and other people's edits.
-4. Write the whole body back as the next version. If the write fails because
-   the version changed, someone else edited the page: read it again and redo
-   the change on the new version. Never write an old copy over a newer one.
+   back (HTML for the official connector, storage for the community one).
+2. Find the section. On a page built from this template, match the heading
+   text exactly. On an older page, match by meaning (for example
+   "1. The Problem" is The Problem) and confirm the mapping with the user once.
+3. Replace only the markup between that section's heading and the next
+   divider. Copy everything else exactly as you read it, including
+   `data-local-id` attributes, layouts, images, column widths and inline
+   comment markers (`<span class="annotation" ...>` in HTML).
+4. Write the whole body back. If the page changed since you read it, read it
+   again and redo the change on the new version. Never write an old copy over
+   a newer one.
 
-Do not use a tool that updates "the section under a heading" (such as
-`confluence_update_page_section`). Section headings sit inside panels, so
-those tools write the new text into the panel and leave the old section
-content where it was. Tested on 27 Oct 2026.
+Inline comments are anchored to the text they sit on. Rewriting that text
+detaches the comment, so warn the user before replacing text that has one.
+Comments elsewhere on the page stay anchored: tested on 27 Oct 2026 with the
+official connector, where an inline comment stayed open and anchored after
+another section was rewritten.
 
-Inline comments are anchored to the text they sit on. Rewriting that text can
-detach them, so warn the user before replacing a section that has open inline
-comments.
+Do not use a tool that updates "the section under a heading" (such as the
+community server's `confluence_update_page_section`). Section headings sit
+inside panels, so those tools write into the panel and leave the old section
+content in place. Tested on 27 Oct 2026.

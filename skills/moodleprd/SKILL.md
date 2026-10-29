@@ -45,7 +45,8 @@ Three rules run through every step:
 the user something is unavailable. Some connectors take a while to start.
 
 - **Confluence.** Use whichever is connected:
-  - the official Atlassian connector: write pages as ADF;
+  - the official Atlassian connector: read and write pages as HTML
+    (`contentFormat: "html"`), which keeps inline comments anchored;
   - a connector that accepts storage format (such as the community
     `mcp-atlassian` server): write pages as storage format;
   - neither: save the PRD locally as markdown, and tell the user it is not in
@@ -91,15 +92,27 @@ Do this before asking any questions about the content.
 3. **Read the live page.** If the user picks one, read the current page and its
    open comments, both footer and inline. Confluence is the master copy. Use a
    local file only if the page cannot be read, and say so.
-4. **Find where to resume.** Test each existing section against its gate in
-   `prd-template.md` and against the writing standard. Keep the sections that
-   pass and skip their questions. Resume at the first section that fails.
-   Treat open comments as input to that section. A section is skipped only
-   because it passes its gate, never just because it has text.
-5. **Check ownership.** If the user is not the page's owner or listed Product
+4. **Map older pages.** If the page was written before this template (for
+   example numbered headings, no Overview table, no open questions tables),
+   match its sections to the template by meaning and show the user the
+   mapping once. Content in the wrong place, such as open questions under
+   Strategy, belongs to the section it is about. Offer to move the page to the
+   template structure section by section as you go. Never restructure the
+   whole page in one write.
+5. **Find where to resume.** Test each existing section against its gate in
+   `prd-template.md`. Keep the sections that pass and skip their questions.
+   Resume at the first section that fails its gate. Treat open comments as
+   input to that section. A section is skipped only because it passes its
+   gate, never just because it has text. Writing problems in a passing
+   section (over budget, banned words) do not stop it passing: list them for
+   the outsider read in Step 5.
+6. **Report before asking.** Show the user, in a short table, each section with
+   pass or fail and the reason, the writing problems found, and where you
+   propose to resume. Then ask whether to start there.
+7. **Check ownership.** If the user is not the page's owner or listed Product
    Manager, switch to Review mode and leave comments instead of editing,
    unless the user says the owner has asked them to edit.
-6. **Edit safely.** Change one section at a time, following "Writing one
+8. **Edit safely.** Change one section at a time, following "Writing one
    section at a time" in `confluence-elements.md`. Warn the user before
    rewriting a section that has open inline comments, because rewriting can
    detach them.
@@ -294,6 +307,8 @@ outside the team and check:
 - **Budgets:** is any section over its word budget?
 - **Words:** any banned word, pattern to cut, or unexplained acronym?
 - **Leftovers:** any placeholder, empty table or guidance text?
+- **Emoji:** any Atlassian-only emoji that shows as text (such as
+  `:rocket:`)? Swap it for the plain character.
 
 Report what you find in a short list, and fix each item with the PM's
 approval, one section at a time. Then ask whether to change the status.
