@@ -45,7 +45,12 @@ Three rules run through every step:
 the user something is unavailable. Some connectors take a while to start.
 
 - **Confluence.** Use whichever is connected:
-  - the official Atlassian connector: write pages as ADF;
+  - the official Atlassian connector: read and write pages as HTML, and
+    prefer its `getConfluenceContent`, `createConfluenceContent`,
+    `updateConfluenceContent` and `createConfluenceComment` tools. They can
+    edit one section by element ID and keep inline comments anchored. Some
+    of its older tools (`createConfluencePage`,
+    `createConfluenceInlineComment`) returned 403 errors in testing;
   - a connector that accepts storage format (such as the community
     `mcp-atlassian` server): write pages as storage format;
   - neither: save the PRD locally as markdown, and tell the user it is not in
@@ -81,9 +86,9 @@ Decide the mode before asking anything.
 
 Do this before asking any questions about the content.
 
-1. **Search.** In Confluence, search for pages whose title contains "PRD" and
-   the initiative's keywords. Include personal spaces: live PRDs often sit in
-   them. Then check the working folder for local PRD files. If the user gave a
+1. **Search.** In Confluence, search for pages labelled `prd` or whose title
+   contains "PRD", together with the initiative's keywords. Include personal
+   spaces: live PRDs often sit in them. Then check the working folder for local PRD files. If the user gave a
    link, use that page and skip the search.
 2. **Ask, never pick.** Show the candidates with their owner and last-edited
    date, and ask: "Is it one of these, or is this a new PRD?" Leave out pages
@@ -91,18 +96,34 @@ Do this before asking any questions about the content.
 3. **Read the live page.** If the user picks one, read the current page and its
    open comments, both footer and inline. Confluence is the master copy. Use a
    local file only if the page cannot be read, and say so.
-4. **Find where to resume.** Test each existing section against its gate in
-   `prd-template.md` and against the writing standard. Keep the sections that
-   pass and skip their questions. Resume at the first section that fails.
-   Treat open comments as input to that section. A section is skipped only
-   because it passes its gate, never just because it has text.
-5. **Check ownership.** If the user is not the page's owner or listed Product
+4. **Map older pages.** If the page was written before this template (for
+   example numbered headings, no Overview table, no open questions tables),
+   match its sections to the template by meaning and show the user the
+   mapping once. Content in the wrong place, such as open questions under
+   Strategy, belongs to the section it is about. Offer to move the page to the
+   template structure section by section as you go. Never restructure the
+   whole page in one write.
+5. **Find where to resume.** Test each existing section against its gate in
+   `prd-template.md`. Keep the sections that pass and skip their questions.
+   Resume at the first section that fails its gate. Treat open comments as
+   input to that section. A section is skipped only because it passes its
+   gate, never just because it has text. Writing problems in a passing
+   section (over budget, banned words) do not stop it passing: list them for
+   the outsider read in Step 5.
+6. **Report before asking.** Show the user, in a short table, each section with
+   pass or fail and the reason, the writing problems found, and where you
+   propose to resume. Then ask whether to start there.
+7. **Check ownership.** If the user is not the page's owner or listed Product
    Manager, switch to Review mode and leave comments instead of editing,
    unless the user says the owner has asked them to edit.
-6. **Edit safely.** Change one section at a time, following "Writing one
+8. **Edit safely.** Change one section at a time, following "Writing one
    section at a time" in `confluence-elements.md`. Warn the user before
    rewriting a section that has open inline comments, because rewriting can
    detach them.
+9. **Label it.** Before the first edit you make to an existing PRD, check its
+   labels and add `prd` if it is missing (see "Label every PRD page" in
+   Step 1). Do this on every edit or update session, not only for pages the
+   skill created. In Review mode you are not editing, so leave labels alone.
 
 A page label such as `prd-stage-solution` can hint at where the PM left off.
 Treat it as a hint only: labels go stale, so the gate tests decide.
@@ -124,8 +145,12 @@ If there is no existing PRD, go to Step 1.
    personal space, or would rather use a team space, ask which space and
    parent page.
 4. **Create the page** once The Problem passes its gate (Step 3). Until then
-   there is nothing worth publishing. From then on, publish each section when
-   the user approves it.
+   there is nothing worth publishing. Use the narrow page width, with content
+   straight in the page body and no single-column layout wrappers (see "Page
+   width and layouts" in `confluence-elements.md`). **Label every PRD page**
+   `prd` straight after creating it (`addLabelsToConfluenceContent` with the
+   official connector, `confluence_add_label` with the community one). From
+   then on, publish each section when the user approves it.
 5. **Keep a local backup.** After every publish, save the whole PRD as
    markdown in the working folder as `PRD_[Plain_Name].md`, with the page link
    at the top. Tell the user where it is once. Never treat it as the master.
@@ -197,11 +222,12 @@ Gates are soft. When a section fails its gate:
 2. Suggest where it could come from (see "Finding evidence").
 3. Ask again.
 
-If the PM still wants to move on, let them, but put a gate override line under
-the section's heading saying what is not yet met (see `confluence-elements.md`).
-Readers then see it. Remove the line once the gap is filled.
+If the PM still wants to move on, let them, but publish the section with a
+DRAFT marker under its heading that says, in plain words, what it still needs
+(see "Draft marker" in `confluence-elements.md`). Readers then know the
+section is unfinished and why. Remove the marker once the gap is filled.
 
-Never let these through without either an answer or an override line:
+Never let these through without either an answer or a DRAFT marker:
 
 - a problem with no named person, or described as a missing feature;
 - a measure that cannot fail;
@@ -268,7 +294,8 @@ are connected:
   and date: the same figure can differ widely depending on which sites are
   counted.
 
-If the PM proceeds without evidence, The Problem gets a gate override line.
+If the PM proceeds without evidence, The Problem is published with a DRAFT
+marker that says the evidence is still to come.
 
 ---
 
@@ -294,6 +321,10 @@ outside the team and check:
 - **Budgets:** is any section over its word budget?
 - **Words:** any banned word, pattern to cut, or unexplained acronym?
 - **Leftovers:** any placeholder, empty table or guidance text?
+- **Links:** any bare URL showing as text? Make it an inline smart link,
+  or link text inside a sentence (see "Links" in `confluence-elements.md`).
+- **Emoji:** any Atlassian-only emoji that shows as text (such as
+  `:rocket:`)? Swap it for the plain character.
 
 Report what you find in a short list, and fix each item with the PM's
 approval, one section at a time. Then ask whether to change the status.
@@ -310,7 +341,8 @@ Use this for a PRD the user does not own, or when they ask for a review.
 3. Report the results to the user, worst first: the gate each section fails
    and the most important writing problems, quoting the sentence.
 4. Offer to leave the findings as comments on the page. Prefer inline comments
-   on the exact sentence. Post nothing until the user approves the wording.
+   on the exact sentence. With the official connector, use `createConfluenceComment`
+   with `commentType: "inline"`. Post nothing until the user approves the wording.
 5. Never edit a page in review mode.
 
 ---
