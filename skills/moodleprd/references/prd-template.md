@@ -8,9 +8,8 @@ sections.
 Each section lists:
 - **Budget:** the most words the section should take.
 - **Gate:** what must be true before the skill moves on. If the section fails,
-  the skill asks for what is missing. The user can move on anyway, and the
-  section is then published with a DRAFT marker saying, in plain words, what
-  it still needs.
+  the skill asks for what is missing. The user can override, and the page then
+  shows a ⚠️ line saying what is missing.
 - **Guidance:** what goes in. Guidance is for the writer and never appears on
   the page.
 
