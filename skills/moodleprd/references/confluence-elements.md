@@ -26,7 +26,9 @@ Rules for both formats:
   panel.
 - Create pages with the default (narrow) page width.
 - Mention a person only with their real Atlassian account ID. Never invent
-  one: write their name as plain text instead.
+  one: write their name as plain text instead. If a user search shows the
+  account as inactive, write the name as plain text and tell the user: the
+  person may have left, or have a second account.
 
 ---
 
@@ -149,7 +151,15 @@ Appendix only. Verbatim, with a link to the source. The same in both formats:
 
 ## Writing one section at a time
 
-A section runs from its panel (or plain heading) to the next divider.
+A section runs from its panel (or plain heading) to the divider just before
+the next section's heading. Older pages sometimes have dividers inside a
+section, so find the next section's heading first, not the next divider.
+
+Pages edited in Confluence's editor often wrap everything in layout sections
+(`<ac:layout-section>` in storage, `<section data-type="layout-...">` in
+HTML), and one PRD section can span several of them. Keep every layout
+open and close tag balanced when you cut or move content, and move images and
+other media rather than dropping them: count them before and after a write.
 
 1. Read the live page right before every write, in the format you will write
    back (HTML for the official connector, storage for the community one).
